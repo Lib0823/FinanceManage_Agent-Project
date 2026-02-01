@@ -107,8 +107,14 @@ const goToInfo = (stock) => {
 <style scoped>
 .bot-screen {
   min-height: 100vh;
-  background: var(--color-bg-primary);
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
   padding-bottom: var(--bottom-nav-height);
+}
+
+/* Header Override */
+.bot-screen :deep(.app-header) {
+  background: #0F172A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .content {

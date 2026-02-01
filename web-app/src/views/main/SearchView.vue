@@ -91,8 +91,14 @@ const goToCompany = (item) => {
 <style scoped>
 .search-screen {
   min-height: 100vh;
-  background: var(--color-bg-primary);
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
   padding-bottom: var(--bottom-nav-height);
+}
+
+/* Header Override */
+.search-screen :deep(.app-header) {
+  background: #0F172A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .content {
@@ -104,9 +110,10 @@ const goToCompany = (item) => {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  border-radius: 16px;
   margin-bottom: var(--spacing-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .filter-btn,

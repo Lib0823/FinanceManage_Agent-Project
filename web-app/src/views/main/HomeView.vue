@@ -247,31 +247,6 @@ const goToCompany = (symbol) => {
         </div>
       </section>
 
-      <!-- Top News -->
-      <section class="section">
-        <h2 class="section-title">속보 TOP5</h2>
-        <div class="news-list">
-          <div
-            v-for="news in topNews.slice(0, 5)"
-            :key="news.id"
-            class="news-item"
-            @click="goToNews(news)"
-          >
-            <div class="news-thumb" v-if="news.image">
-              <img :src="news.image" :alt="news.title" />
-            </div>
-            <div class="news-content">
-              <span class="news-title">{{ news.title }}</span>
-              <span class="news-desc" v-if="news.description">{{ news.description }}</span>
-            </div>
-            <div class="news-meta">
-              <span class="news-source" v-if="news.source">{{ news.source }}</span>
-              <span class="news-date">{{ news.date }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Exchange Rates -->
       <section class="section">
         <h2 class="section-title">환율</h2>
@@ -325,6 +300,31 @@ const goToCompany = (symbol) => {
         </div>
       </section>
 
+      <!-- Top News -->
+      <section class="section">
+        <h2 class="section-title">속보 TOP3</h2>
+        <div class="news-list">
+          <div
+            v-for="news in topNews.slice(0, 3)"
+            :key="news.id"
+            class="news-item"
+            @click="goToNews(news)"
+          >
+            <div class="news-thumb" v-if="news.image">
+              <img :src="news.image" :alt="news.title" />
+            </div>
+            <div class="news-content">
+              <span class="news-title">{{ news.title }}</span>
+              <span class="news-desc" v-if="news.description">{{ news.description }}</span>
+            </div>
+            <div class="news-meta">
+              <span class="news-source" v-if="news.source">{{ news.source }}</span>
+              <span class="news-date">{{ news.date }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- AI Recommendations -->
       <section class="section">
         <h2 class="section-title">AI 추천</h2>
@@ -357,8 +357,14 @@ const goToCompany = (symbol) => {
 <style scoped>
 .home-screen {
   min-height: 100vh;
-  background: var(--color-bg-primary);
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
   padding-bottom: var(--bottom-nav-height);
+}
+
+/* Header Override */
+.home-screen :deep(.app-header) {
+  background: #0F172A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .content {
@@ -370,14 +376,21 @@ const goToCompany = (symbol) => {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  border-radius: 16px;
   margin-bottom: var(--spacing-lg);
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.notification-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .notification-banner:active {
-  opacity: 0.8;
+  transform: translateY(0);
 }
 
 .notification-icon {
@@ -687,9 +700,16 @@ const goToCompany = (symbol) => {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  border-radius: 12px;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.news-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .news-thumb {
@@ -762,11 +782,12 @@ const goToCompany = (symbol) => {
 }
 
 .exchange-card {
-  background: var(--color-bg-highlight);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  border-radius: 16px;
   padding: var(--spacing-md);
   flex: 0 0 84%;
   scroll-snap-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .exchange-info {
@@ -838,18 +859,24 @@ const goToCompany = (symbol) => {
 }
 
 .ai-card {
-  background: var(--color-bg-accent);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  border-radius: 16px;
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xxs);
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.ai-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .ai-card:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .ai-header {
