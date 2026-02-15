@@ -142,7 +142,13 @@ const assetIcons = {
 }
 
 const goToDetail = (type) => {
-  router.push({ path: '/assets/detail', query: { type } })
+  router.push({
+    path: '/assets/detail',
+    query: {
+      main: type,
+      sub: type === 'stocks' ? 'overseas' : undefined
+    }
+  })
 }
 
 const handleRefresh = () => {
@@ -573,6 +579,7 @@ const handleRefresh = () => {
   background: rgba(30, 41, 59, 0.5);
   cursor: default;
   display: flex;
+  margin-top: 10px;
   align-items: center;
   justify-content: center;
   min-height: 80px;

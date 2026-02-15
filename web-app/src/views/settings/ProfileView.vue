@@ -7,6 +7,7 @@ import { mockUser } from '@/services/mockData'
 const router = useRouter()
 
 const user = ref(mockUser)
+const showBirthCalendar = ref(false)
 
 const goToSettings = () => {
   router.push('/settings')
@@ -27,6 +28,34 @@ const handleSave = () => {
 
 const handleGetAppKey = () => {
   window.open('https://apiportal.koreainvestment.com', '_blank')
+}
+
+const handleAuthenticate = () => {
+  // TODO: 실제 인증 API 호출
+  console.log('인증 요청:', {
+    accountNumber: user.value.broker.accountNumber,
+    appKey: user.value.broker.appKey,
+    appSecret: user.value.broker.appSecret
+  })
+  // 임시 알림
+  alert('인증이 완료되었습니다.')
+}
+
+const openBirthPicker = () => {
+  showBirthCalendar.value = true
+}
+
+const confirmBirth = (value) => {
+  const date = new Date(value)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  user.value.birth = `${year}.${month}.${day}`
+  showBirthCalendar.value = false
+}
+
+const closeBirthPicker = () => {
+  showBirthCalendar.value = false
 }
 </script>
 
@@ -54,7 +83,10 @@ const handleGetAppKey = () => {
       <!-- Avatar Section -->
       <div class="avatar-section">
         <div class="avatar">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=finance" alt="Avatar" />
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 21C6 17.134 8.68629 14 12 14C15.3137 14 18 17.134 18 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
 
@@ -62,30 +94,35 @@ const handleGetAppKey = () => {
       <section class="info-card">
         <h3 class="card-title">회원 정보</h3>
 
-        <div class="info-row">
+        <div class="info-row disabled">
           <span class="info-label">ID</span>
-          <span class="info-value">{{ user.id }}</span>
+          <input type="text" class="info-input" :value="user.id" disabled />
         </div>
 
-        <div class="info-row">
+        <div class="info-row disabled">
           <span class="info-label">PW</span>
-          <span class="info-value">************</span>
-          <button class="action-btn" @click="goToResetPassword">비밀번호 재설정</button>
+          <input type="password" class="info-input" value="************" disabled />
+          <button class="action-btn" @click="goToResetPassword">재설정</button>
         </div>
 
         <div class="info-row">
           <span class="info-label">Phone</span>
-          <span class="info-value">{{ user.phone }}</span>
+          <input type="tel" class="info-input" v-model="user.phone" placeholder="전화번호 입력" />
         </div>
 
         <div class="info-row">
           <span class="info-label">Name</span>
-          <span class="info-value">{{ user.name }}</span>
+          <input type="text" class="info-input" v-model="user.name" placeholder="이름 입력" />
         </div>
 
         <div class="info-row">
           <span class="info-label">Birth</span>
-          <span class="info-value highlight">{{ user.birth }}</span>
+          <div class="info-input clickable" @click="openBirthPicker">
+            <span>{{ user.birth }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </div>
       </section>
 
@@ -93,29 +130,38 @@ const handleGetAppKey = () => {
       <section class="info-card broker">
         <div class="broker-header">
           <span class="broker-badge">증권 정보</span>
-          <span class="broker-sub">*한국 투자</span>
+          <span class="broker-sub">한국투자증권</span>
         </div>
 
         <div class="info-row">
           <span class="info-label">계좌번호</span>
-          <span class="info-value">{{ user.broker.accountNumber }}</span>
+          <input type="text" class="info-input" v-model="user.broker.accountNumber" placeholder="계좌번호 입력" />
         </div>
 
         <div class="info-row">
-          <span class="info-label">APP_Key</span>
-          <span class="info-value">{{ user.broker.appKey }}</span>
+          <span class="info-label">APP Key</span>
+          <input type="text" class="info-input" v-model="user.broker.appKey" placeholder="APP Key 입력" />
         </div>
 
         <div class="info-row">
-          <span class="info-label">APP_Secret</span>
-          <span class="info-value">{{ user.broker.appSecret }}</span>
+          <span class="info-label">APP Secret</span>
+          <input type="text" class="info-input" v-model="user.broker.appSecret" placeholder="APP Secret 입력" />
         </div>
 
-        <button class="link-btn" @click="handleGetAppKey">
-          APP Key(Secret) 발급 >
-        </button>
-
-        <button class="save-small-btn">저장</button>
+        <div class="broker-buttons">
+          <button class="link-btn" @click="handleGetAppKey">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M10 6H6C4.89543 6 4 6.89543 4 8V18C4 19.1046 4.89543 20 6 20H16C17.1046 20 18 19.1046 18 18V14M14 4H20M20 4V10M20 4L10 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            발급받기
+          </button>
+          <button class="auth-btn" @click="handleAuthenticate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            인증
+          </button>
+        </div>
       </section>
 
       <!-- Save Button -->
@@ -126,14 +172,46 @@ const handleGetAppKey = () => {
 
     <!-- Spacer for bottom nav -->
     <div class="bottom-spacer"></div>
+
+    <!-- Birth Calendar Modal -->
+    <van-calendar
+      v-model:show="showBirthCalendar"
+      :min-date="new Date(1900, 0, 1)"
+      :max-date="new Date()"
+      :default-date="new Date(user.birth.replace(/\./g, '-'))"
+      color="#F59E0B"
+      :show-confirm="false"
+      @confirm="confirmBirth"
+      @close="closeBirthPicker"
+      :style="{ zIndex: 10000 }"
+      teleport="body"
+    >
+      <template #title>
+        <div class="calendar-header">
+          <button class="calendar-close-btn" @click="closeBirthPicker">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="calendar-title">생년월일 선택</span>
+          <div style="width: 24px;"></div>
+        </div>
+      </template>
+    </van-calendar>
   </div>
 </template>
 
 <style scoped>
 .profile-screen {
   min-height: 100vh;
-  background: var(--color-bg-primary);
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
   padding-bottom: var(--bottom-nav-height);
+}
+
+/* Header Override */
+.profile-screen :deep(.app-header) {
+  background: #0F172A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .icon-btn {
@@ -142,6 +220,15 @@ const handleGetAppKey = () => {
   color: var(--color-text-primary);
   cursor: pointer;
   padding: var(--spacing-sm);
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--color-primary);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
 }
 
 .content {
@@ -155,73 +242,128 @@ const handleGetAppKey = () => {
 }
 
 .avatar {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  overflow: hidden;
-  background: var(--color-bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+  border: 2px solid rgba(245, 158, 11, 0.3);
 }
 
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.avatar svg {
+  width: 56px;
+  height: 56px;
+  color: var(--color-primary);
 }
 
 .info-card {
-  background: var(--color-bg-highlight);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   border-radius: var(--radius-xl);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card-title {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   text-align: center;
   margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--color-border-light);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .info-row:last-of-type {
   border-bottom: none;
 }
 
+.info-row.disabled {
+  opacity: 0.6;
+}
+
 .info-label {
-  width: 80px;
+  min-width: 80px;
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
 }
 
-.info-value {
+.info-input {
   flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
+  transition: all 0.2s;
 }
 
-.info-value.highlight {
-  color: var(--color-primary);
-  background: var(--color-bg-primary);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  display: inline-block;
+.info-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.info-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.info-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.info-input.clickable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.info-input.clickable:hover {
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.info-input.clickable svg {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .action-btn {
   padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-bg-tertiary);
-  border: none;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
-  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
   cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--color-primary);
+}
+
+.action-btn:active {
+  transform: scale(0.98);
 }
 
 .broker-header {
@@ -230,63 +372,218 @@ const handleGetAppKey = () => {
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
   justify-content: center;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .broker-badge {
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-primary);
+  padding: var(--spacing-xs) var(--spacing-lg);
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: var(--color-text-inverse);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .broker-sub {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.broker-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
 }
 
 .link-btn {
-  display: block;
-  width: 100%;
-  background: none;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   cursor: pointer;
-  text-align: center;
-  margin-top: var(--spacing-md);
+  transition: all 0.2s;
 }
 
-.save-small-btn {
-  display: block;
-  width: 100%;
-  padding: var(--spacing-sm);
-  background: var(--color-bg-tertiary);
+.link-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.link-btn:active {
+  transform: translateY(0);
+}
+
+.auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: white;
   cursor: pointer;
-  margin-top: var(--spacing-md);
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.auth-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.auth-btn:active {
+  transform: translateY(0);
 }
 
 .btn-save {
   width: 100%;
   padding: var(--spacing-lg);
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: var(--color-text-inverse);
   border: none;
   border-radius: var(--radius-lg);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s;
 }
 
 .btn-save:hover {
-  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.btn-save:active {
+  transform: translateY(0);
 }
 
 .bottom-spacer {
   height: var(--bottom-nav-height);
+}
+
+/* Calendar Header */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  background: #1F2937;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.calendar-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.calendar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+}
+
+.calendar-close-btn:active {
+  transform: scale(0.95);
+}
+
+/* Override Vant Calendar styles */
+:deep(.van-calendar) {
+  background: #1F2937;
+  z-index: 10000 !important;
+}
+
+:deep(.van-calendar__popup) {
+  z-index: 10000 !important;
+  background: #1F2937;
+}
+
+:deep(.van-overlay) {
+  z-index: 9999 !important;
+}
+
+:deep(.van-calendar__header) {
+  background: #1F2937;
+  box-shadow: none;
+}
+
+:deep(.van-calendar__header-title) {
+  display: none;
+}
+
+:deep(.van-calendar__header-subtitle) {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+:deep(.van-calendar__weekdays) {
+  background: #1F2937;
+}
+
+:deep(.van-calendar__weekday) {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+:deep(.van-calendar__body) {
+  background: #1F2937;
+}
+
+:deep(.van-calendar__month-title) {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+  background: #1F2937;
+}
+
+:deep(.van-calendar__day) {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+:deep(.van-calendar__day--disabled) {
+  color: var(--color-text-tertiary);
+  opacity: 0.4;
+}
+
+:deep(.van-calendar__selected-day) {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: white;
+  border-radius: var(--radius-md);
+}
+
+:deep(.van-calendar__top-info),
+:deep(.van-calendar__bottom-info) {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
 }
 </style>

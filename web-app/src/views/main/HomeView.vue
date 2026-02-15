@@ -693,6 +693,7 @@ const goToCompany = (symbol) => {
 .news-list {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .news-item {
@@ -705,6 +706,12 @@ const goToCompany = (symbol) => {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.news-item:has(.news-title:hover),
+.news-item:has(.news-title:active) {
+  z-index: 20;
 }
 
 .news-item:hover {
@@ -731,17 +738,45 @@ const goToCompany = (symbol) => {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  position: relative;
 }
 
 .news-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 4px;
+}
+
+.news-title:hover,
+.news-title:active {
+  white-space: normal;
+  word-break: keep-all;
+  word-wrap: break-word;
+  overflow: visible;
+  background: linear-gradient(135deg, #334155 0%, #475569 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  line-height: 1.4;
 }
 
 .news-desc {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .news-meta {

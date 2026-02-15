@@ -15,9 +15,10 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const mainTabs = [
-  { key: 'stocks', label: '주식' },
-  { key: 'bonds', label: '채권' },
-  { key: 'coins', label: '코인' }
+  { key: 'cash', label: '현금', disabled: false },
+  { key: 'stocks', label: '주식', disabled: false },
+  { key: 'bonds', label: '채권', disabled: true },
+  { key: 'coins', label: '코인', disabled: true }
 ]
 
 const subTabs = [
@@ -28,7 +29,8 @@ const subTabs = [
 const activeMain = ref(props.modelValue.main)
 const activeSub = ref(props.modelValue.sub)
 
-const selectMain = (key) => {
+const selectMain = (key, disabled) => {
+  if (disabled) return
   activeMain.value = key
   emit('update:modelValue', { main: key, sub: activeSub.value })
 }
@@ -51,8 +53,8 @@ watch(() => props.modelValue, (newVal) => {
       <button
         v-for="tab in mainTabs"
         :key="tab.key"
-        :class="['tab-btn', { active: activeMain === tab.key }]"
-        @click="selectMain(tab.key)"
+        :class="['tab-btn', { active: activeMain === tab.key, disabled: tab.disabled }]"
+        @click="selectMain(tab.key, tab.disabled)"
       >
         {{ tab.label }}
       </button>
@@ -71,7 +73,7 @@ watch(() => props.modelValue, (newVal) => {
     </div>
 
     <!-- Progress Bar -->
-    <div class="progress-bar">
+    <div v-if="showSubTabs" class="progress-bar">
       <div
         class="progress-fill"
         :style="{ width: activeSub === 'domestic' ? '50%' : '100%', left: activeSub === 'domestic' ? '0' : '50%' }"
@@ -109,6 +111,15 @@ watch(() => props.modelValue, (newVal) => {
 .tab-btn.active {
   background: #F59E0B;
   color: var(--color-text-inverse);
+}
+
+.tab-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tab-btn.disabled:hover {
+  background: transparent;
 }
 
 .sub-tabs {

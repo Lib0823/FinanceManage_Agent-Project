@@ -104,6 +104,11 @@ const router = createRouter({
       name: 'news-detail',
       component: () => import('../views/detail/NewsDetailView.vue')
     },
+    {
+      path: '/transfer',
+      name: 'transfer',
+      component: () => import('../views/detail/TransferView.vue')
+    },
 
     // Settings routes
     {

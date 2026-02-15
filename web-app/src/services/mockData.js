@@ -72,7 +72,7 @@ export const mockStocks = [
     profitPercent: 34,
     avgPrice: 20000,
     quantity: 124,
-    logo: 'https://logo.clearbit.com/amazon.com'
+    logo: '' // 임시로 빈 값
   },
   {
     symbol: 'APPL',
@@ -84,7 +84,7 @@ export const mockStocks = [
     profitPercent: 34,
     avgPrice: 20000,
     quantity: 124,
-    logo: 'https://logo.clearbit.com/apple.com'
+    logo: '' // 임시로 빈 값
   }
 ]
 
