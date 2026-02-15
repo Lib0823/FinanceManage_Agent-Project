@@ -1,0 +1,21 @@
+# 의존성 패키지 (빌드 시 새로 설치하므로 제외)
+node_modules
+npm-debug.log
+
+# 빌드 결과물 (Dockerfile 내부에서 생성하므로 로컬 파일은 제외)
+dist
+
+# Git 설정 파일
+.git
+.gitignore
+
+# 환경 변수 파일 (보안을 위해 이미지에 포함하지 않음)
+.env
+.env.local
+.env.*.local
+
+# 운영체제 및 에디터 관련 설정
+.DS_Store
+Thumbs.db
+.vscode
+.idea
