@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
 import { mockTradingOrders } from '@/services/mockData'
@@ -7,8 +7,13 @@ import { mockTradingOrders } from '@/services/mockData'
 const route = useRoute()
 
 const symbol = ref(route.params.symbol || 'AMZN')
-const orders = ref(mockTradingOrders)
 const activeTab = ref('buy')
+
+// 현재 종목에 해당하는 주문만 필터링
+const filteredOrders = computed(() => ({
+  pending: mockTradingOrders.pending.filter(order => order.symbol === symbol.value),
+  reserved: mockTradingOrders.reserved.filter(order => order.symbol === symbol.value)
+}))
 
 const orderForm = ref({
   type: 'market',
@@ -59,10 +64,10 @@ const placeOrder = () => {
 
       <!-- Orders Section -->
       <div class="orders-section">
-        <div class="order-group">
-          <h3 class="order-title">예약 주문</h3>
+        <div class="order-group" v-if="filteredOrders.pending.length > 0">
+          <h3 class="order-title">미체결</h3>
           <div class="order-list">
-            <div v-for="(order, idx) in orders.pending" :key="idx" class="order-item">
+            <div v-for="(order, idx) in filteredOrders.pending" :key="idx" class="order-item">
               <span :class="['order-type', order.type]">{{ order.type === 'sell' ? '매도' : '매수' }}</span>
               <span class="order-symbol">{{ order.name }}({{ order.symbol }})</span>
               <span class="order-price">{{ formatNumber(order.price) }}{{ order.currency }}</span>
@@ -70,15 +75,19 @@ const placeOrder = () => {
           </div>
         </div>
 
-        <div class="order-group">
-          <h3 class="order-title">미체결</h3>
+        <div class="order-group" v-if="filteredOrders.reserved.length > 0">
+          <h3 class="order-title">예약 주문</h3>
           <div class="order-list">
-            <div v-for="(order, idx) in orders.reserved" :key="idx" class="order-item">
+            <div v-for="(order, idx) in filteredOrders.reserved" :key="idx" class="order-item">
               <span :class="['order-type', order.type]">{{ order.type === 'sell' ? '매도' : '매수' }}</span>
               <span class="order-symbol">{{ order.name }}({{ order.symbol }})</span>
               <span class="order-price">{{ formatNumber(order.price) }}{{ order.currency }}</span>
             </div>
           </div>
+        </div>
+
+        <div v-if="filteredOrders.pending.length === 0 && filteredOrders.reserved.length === 0" class="no-orders">
+          <p>현재 {{ symbol }} 종목에 대한 미체결 및 예약 주문이 없습니다.</p>
         </div>
       </div>
 
@@ -264,6 +273,13 @@ const placeOrder = () => {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+}
+
+.no-orders {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .trading-form {

@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
-import AssetTabs from '@/components/common/AssetTabs.vue'
+import InvestmentTabs from '@/components/common/InvestmentTabs.vue'
 import { mockSearchResults } from '@/services/mockData'
 
 const router = useRouter()
@@ -11,13 +11,33 @@ const tabs = ref({ main: 'stocks', sub: 'domestic' })
 const searchQuery = ref('')
 const results = ref(mockSearchResults)
 
+// Mock price data (나중에 API로 대체)
+const priceData = {
+  currentPrice: 71500,
+  change: 500,
+  changePercent: 0.70
+}
+
 const filteredResults = computed(() => {
-  if (!searchQuery.value) return results.value
-  const query = searchQuery.value.toLowerCase()
-  return results.value.filter(
-    item => item.name.toLowerCase().includes(query) || item.symbol.toLowerCase().includes(query)
-  )
+  let filtered = results.value
+
+  // 시장 필터링 (국내/해외)
+  filtered = filtered.filter(item => item.market === tabs.value.sub)
+
+  // 검색어 필터링
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(
+      item => item.name.toLowerCase().includes(query) || item.symbol.toLowerCase().includes(query)
+    )
+  }
+
+  return filtered
 })
+
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('ko-KR').format(num)
+}
 
 const toggleFavorite = (item) => {
   item.isFavorite = !item.isFavorite
@@ -34,15 +54,10 @@ const goToCompany = (item) => {
 
     <div class="content">
       <!-- Tabs -->
-      <AssetTabs v-model="tabs" />
+      <InvestmentTabs v-model="tabs" />
 
       <!-- Search Input -->
       <div class="search-bar">
-        <button class="filter-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
         <input
           v-model="searchQuery"
           type="text"
@@ -59,25 +74,50 @@ const goToCompany = (item) => {
 
       <!-- Results List -->
       <div class="results-container">
-        <div class="results-list">
+        <div v-if="filteredResults.length === 0" class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="var(--color-text-tertiary)" stroke-width="2"/>
+            <path d="M21 21L16.5 16.5" stroke="var(--color-text-tertiary)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-text">검색 결과가 없습니다</p>
+        </div>
+
+        <div v-else class="results-list">
           <div
-            v-for="item in filteredResults"
+            v-for="(item, idx) in filteredResults"
             :key="item.symbol"
             class="result-item"
             @click="goToCompany(item)"
           >
-            <div class="item-thumb">
-              <img :src="`https://logo.clearbit.com/${item.symbol.toLowerCase()}.com`" :alt="item.name" @error="$event.target.style.display='none'" />
-            </div>
-            <div class="item-content">
-              <span class="item-name">{{ item.name }}</span>
-              <span v-if="item.isFavorite" class="favorite-star">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            <div class="item-left">
+              <div class="item-thumb">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <rect width="40" height="40" rx="10" :fill="`url(#itemGradient${idx})`"/>
+                  <defs>
+                    <linearGradient :id="`itemGradient${idx}`" x1="0" y1="0" x2="40" y2="40">
+                      <stop offset="0%" :stop-color="idx % 3 === 0 ? '#3B82F6' : idx % 3 === 1 ? '#10B981' : '#F59E0B'"/>
+                      <stop offset="100%" :stop-color="idx % 3 === 0 ? '#1E40AF' : idx % 3 === 1 ? '#047857' : '#D97706'"/>
+                    </linearGradient>
+                  </defs>
+                  <text x="20" y="26" font-size="16" font-weight="bold" fill="white" text-anchor="middle">{{ item.name.charAt(0) }}</text>
                 </svg>
-              </span>
+              </div>
+              <div class="item-info">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-symbol">{{ item.symbol }}</span>
+              </div>
             </div>
-            <span class="item-desc">Description</span>
+            <div class="item-right">
+              <div class="item-price">{{ formatNumber(priceData.currentPrice) }}원</div>
+              <div :class="['item-change', priceData.change >= 0 ? 'positive' : 'negative']">
+                {{ priceData.change >= 0 ? '+' : '' }}{{ priceData.changePercent }}%
+              </div>
+            </div>
+            <button class="star-btn" @click.stop="toggleFavorite(item)">
+              <svg width="18" height="18" viewBox="0 0 24 24" :fill="item.isFavorite ? '#F59E0B' : 'none'" :stroke="item.isFavorite ? 'none' : '#64748B'" stroke-width="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -116,13 +156,17 @@ const goToCompany = (item) => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-.filter-btn,
 .search-btn {
   background: none;
   border: none;
   color: var(--color-text-secondary);
   cursor: pointer;
   padding: var(--spacing-xs);
+  transition: color 0.2s;
+}
+
+.search-btn:hover {
+  color: var(--color-text-primary);
 }
 
 .search-input {
@@ -130,6 +174,7 @@ const goToCompany = (item) => {
   border: none;
   background: none;
   font-size: var(--font-size-base);
+  color: var(--color-text-primary);
   outline: none;
 }
 
@@ -138,70 +183,130 @@ const goToCompany = (item) => {
 }
 
 .results-container {
-  background: var(--color-bg-accent);
-  border-radius: var(--radius-xl);
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   padding: var(--spacing-md);
   min-height: 400px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  gap: var(--spacing-sm);
+}
+
+.empty-text {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
 }
 
 .results-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .result-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: var(--color-secondary-light);
-  border-radius: var(--radius-lg);
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .result-item:hover {
-  background: var(--color-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateX(2px);
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
 }
 
 .item-thumb {
   width: 40px;
   height: 40px;
-  background: var(--color-bg-highlight);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.item-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.item-content {
-  flex: 1;
+.item-info {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
+  flex-direction: column;
+  gap: 2px;
 }
 
 .item-name {
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
-.favorite-star {
+.item-symbol {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.item-right {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-right: var(--spacing-sm);
 }
 
-.item-desc {
+.item-price {
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.item-change {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+
+.item-change.positive {
+  color: #10B981;
+}
+
+.item-change.negative {
+  color: #EF4444;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.star-btn:hover {
+  opacity: 1;
 }
 
 .bottom-spacer {

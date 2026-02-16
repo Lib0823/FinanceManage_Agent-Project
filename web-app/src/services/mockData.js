@@ -263,18 +263,22 @@ export const mockCompanyInfo = {
 export const mockTradingOrders = {
   pending: [
     { type: 'sell', symbol: 'AMZN', name: '아마존', price: 4262000, currency: '$' },
-    { type: 'buy', symbol: 'AMZN', name: '아마존', price: 4262000, currency: '$' }
+    { type: 'buy', symbol: 'TSLA', name: '테슬라', price: 1850000, currency: '$' }
   ],
   reserved: [
-    { type: 'sell', symbol: 'AMZN', name: '아마존', price: 734000, currency: '$' },
-    { type: 'buy', symbol: 'AMZN', name: '아마존', price: 2532000, currency: '$' }
+    { type: 'buy', symbol: 'AAPL', name: '애플', price: 920000, currency: '$' }
   ]
 }
 
 export const mockTradingHistory = [
   { type: 'sell', symbol: 'AMZN', name: '아마존', amount: 4262000, currency: '$' },
   { type: 'buy', symbol: 'AMZN', name: '아마존', amount: 12320, currency: '$' },
-  { type: 'dividend', label: '원화', amount: 234520, currency: '$' }
+  { type: 'dividend', label: '원화', amount: 234520, currency: '$' },
+  { type: 'buy', symbol: 'TSLA', name: '테슬라', amount: 3520000, currency: '$' },
+  { type: 'sell', symbol: 'AAPL', name: '애플', amount: 1890000, currency: '$' },
+  { type: 'buy', symbol: 'MSFT', name: '마이크로소프트', amount: 2140000, currency: '$' },
+  { type: 'dividend', label: 'S&P 500 ETF', amount: 158000, currency: '$' },
+  { type: 'sell', symbol: 'NVDA', name: '엔비디아', amount: 5320000, currency: '$' }
 ]
 
 export const mockTransactionSummary = {
@@ -355,12 +359,21 @@ export const mockSettings = {
 }
 
 export const mockSearchResults = [
-  { symbol: 'TSLA', name: '테슬라', isFavorite: true },
-  { symbol: 'AMZN', name: '아마존', isFavorite: false },
-  { symbol: 'AAPL', name: '애플', isFavorite: true },
-  { symbol: 'GOOG', name: '구글', isFavorite: true },
-  { symbol: 'MSFT', name: '마이크로소프트', isFavorite: false },
-  { symbol: 'NVDA', name: '엔비디아', isFavorite: false },
-  { symbol: 'META', name: '메타', isFavorite: false },
-  { symbol: 'NFLX', name: '넷플릭스', isFavorite: false }
+  // 국내 주식
+  { symbol: '005930', name: '삼성전자', market: 'domestic', isFavorite: true },
+  { symbol: '035720', name: 'NAVER', market: 'domestic', isFavorite: true },
+  { symbol: '035420', name: '카카오', market: 'domestic', isFavorite: false },
+  { symbol: '000660', name: 'SK하이닉스', market: 'domestic', isFavorite: true },
+  { symbol: '051910', name: 'LG화학', market: 'domestic', isFavorite: false },
+  { symbol: '207940', name: '삼성바이오로직스', market: 'domestic', isFavorite: false },
+
+  // 해외 주식
+  { symbol: 'TSLA', name: '테슬라', market: 'overseas', isFavorite: true },
+  { symbol: 'AMZN', name: '아마존', market: 'overseas', isFavorite: false },
+  { symbol: 'AAPL', name: '애플', market: 'overseas', isFavorite: true },
+  { symbol: 'GOOG', name: '구글', market: 'overseas', isFavorite: true },
+  { symbol: 'MSFT', name: '마이크로소프트', market: 'overseas', isFavorite: false },
+  { symbol: 'NVDA', name: '엔비디아', market: 'overseas', isFavorite: false },
+  { symbol: 'META', name: '메타', market: 'overseas', isFavorite: false },
+  { symbol: 'NFLX', name: '넷플릭스', market: 'overseas', isFavorite: false }
 ]
