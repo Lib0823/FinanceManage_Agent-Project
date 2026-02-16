@@ -117,7 +117,10 @@ const goToNews = (news) => {
 }
 
 const goToCompany = (symbol) => {
-  router.push(`/company/${symbol}`)
+  router.push({
+    path: `/company/${symbol}`,
+    query: { showAiAnalysis: 'true' }
+  })
 }
 </script>
 
@@ -335,17 +338,33 @@ const goToCompany = (symbol) => {
             class="ai-card"
             @click="goToCompany(item.symbol)"
           >
-            <div class="ai-header">
-              <div class="ai-logo">
-                <img v-if="item.logo" :src="item.logo" :alt="item.title" />
-                <span v-else class="ai-logo-placeholder">{{ item.title.charAt(0) }}</span>
+            <div class="ai-card-gradient"></div>
+            <div class="ai-content">
+              <div class="ai-header">
+                <div class="ai-logo-container">
+                  <div class="ai-logo">
+                    <img v-if="item.logo" :src="item.logo" :alt="item.title" />
+                    <span v-else class="ai-logo-placeholder">{{ item.title.charAt(0) }}</span>
+                  </div>
+                </div>
+                <div class="ai-title-wrap">
+                  <span class="ai-title">{{ item.title }}</span>
+                  <span class="ai-tag">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    {{ item.tag }}
+                  </span>
+                </div>
               </div>
-              <div class="ai-title-wrap">
-                <span class="ai-title">{{ item.title }}</span>
-                <span class="ai-tag">{{ item.tag }}</span>
+              <p class="ai-desc">{{ item.description }}</p>
+              <div class="ai-footer">
+                <span class="ai-action">자세히 보기</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </div>
             </div>
-            <p class="ai-desc">{{ item.description }}</p>
           </div>
         </div>
       </section>
@@ -890,28 +909,69 @@ const goToCompany = (symbol) => {
 .ai-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .ai-card {
+  position: relative;
   background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   border-radius: 16px;
-  padding: var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xxs);
+  overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ai-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ai-card:hover::before {
+  opacity: 1;
+}
+
+.ai-card-gradient {
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.ai-card:hover .ai-card-gradient {
+  opacity: 1;
 }
 
 .ai-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(79, 70, 229, 0.25), 0 0 0 1px rgba(79, 70, 229, 0.3);
+  border-color: rgba(79, 70, 229, 0.3);
 }
 
 .ai-card:active {
-  transform: translateY(0);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.ai-content {
+  position: relative;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  z-index: 1;
 }
 
 .ai-header {
@@ -920,9 +980,34 @@ const goToCompany = (symbol) => {
   gap: var(--spacing-sm);
 }
 
+.ai-logo-container {
+  position: relative;
+}
+
+.ai-logo-container::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ai-card:hover .ai-logo-container::before {
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
 .ai-logo {
-  width: 32px;
-  height: 32px;
+  position: relative;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
@@ -930,16 +1015,18 @@ const goToCompany = (symbol) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .ai-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  padding: 4px;
 }
 
 .ai-logo-placeholder {
-  font-size: var(--font-size-sm);
+  font-size: 16px;
   font-weight: var(--font-weight-bold);
   color: var(--color-primary);
 }
@@ -947,7 +1034,9 @@ const goToCompany = (symbol) => {
 .ai-title-wrap {
   flex: 1;
   min-width: 0;
-  line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .ai-title {
@@ -955,23 +1044,66 @@ const goToCompany = (symbol) => {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   display: block;
-  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ai-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
-  color: var(--color-text-tertiary);
+  color: #A78BFA;
+  font-weight: var(--font-weight-medium);
+}
+
+.ai-tag svg {
+  flex-shrink: 0;
 }
 
 .ai-desc {
   font-size: var(--font-size-xs);
   color: rgba(255, 255, 255, 0.75);
-  line-height: 1.3;
+  line-height: 1.4;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 42px;
+}
+
+.ai-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--spacing-xs);
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.3s ease;
+}
+
+.ai-card:hover .ai-footer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ai-action {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: #A78BFA;
+}
+
+.ai-footer svg {
+  color: #A78BFA;
+  transition: transform 0.3s ease;
+}
+
+.ai-card:hover .ai-footer svg {
+  transform: translateX(4px);
 }
 
 .bottom-spacer {
