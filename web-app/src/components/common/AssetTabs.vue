@@ -6,6 +6,16 @@ const props = defineProps({
     type: Object,
     default: () => ({ main: 'stocks', sub: 'domestic' })
   },
+  // 탭 목록을 외부에서 받을 수 있도록 추가
+  tabs: {
+    type: Array,
+    default: () => [
+      { key: 'cash', label: '현금', disabled: false },
+      { key: 'stocks', label: '주식', disabled: false },
+      { key: 'bonds', label: '채권', disabled: true },
+      { key: 'coins', label: '코인', disabled: true }
+    ]
+  },
   showSubTabs: {
     type: Boolean,
     default: true
@@ -13,13 +23,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
-
-const mainTabs = [
-  { key: 'cash', label: '현금', disabled: false },
-  { key: 'stocks', label: '주식', disabled: false },
-  { key: 'bonds', label: '채권', disabled: true },
-  { key: 'coins', label: '코인', disabled: true }
-]
 
 const subTabs = [
   { key: 'domestic', label: '국내' },
@@ -51,7 +54,7 @@ watch(() => props.modelValue, (newVal) => {
     <!-- Main Tabs -->
     <div class="main-tabs">
       <button
-        v-for="tab in mainTabs"
+        v-for="tab in tabs"
         :key="tab.key"
         :class="['tab-btn', { active: activeMain === tab.key, disabled: tab.disabled }]"
         @click="selectMain(tab.key, tab.disabled)"

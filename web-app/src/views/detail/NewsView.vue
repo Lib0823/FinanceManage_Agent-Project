@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AssetTabs from '@/components/common/AssetTabs.vue'
@@ -8,14 +8,41 @@ import { mockTopNews } from '@/services/mockData'
 const router = useRouter()
 
 const tabs = ref({ main: 'stocks', sub: 'domestic' })
-const selectedDate = ref(new Date())
-const sortOrder = ref('latest')
+const newTabList = [
+  { key: 'stocks', label: '주식', disabled: false },
+  { key: 'coins', label: '코인', disabled: false }
+]
+const dateFilters = [
+  { key: 'today', label: '오늘' },
+  { key: 'yesterday', label: '어제' },
+  { key: 'week', label: '일주일' },
+  { key: 'month', label: '1개월' }
+]
+const selectedDateFilter = ref('today')
+const sortOrders = ['최신순', '조회순', '추천순']
+const sortOrderIndex = ref(0)
 const searchQuery = ref('')
 const newsList = ref(mockTopNews)
+
+const selectDateFilter = (key) => {
+  selectedDateFilter.value = key
+}
+
+const toggleSortOrder = () => {
+  sortOrderIndex.value = (sortOrderIndex.value + 1) % sortOrders.length
+}
 
 const goToNewsDetail = (news) => {
   router.push(`/news/${news.id}`)
 }
+
+onMounted(() => {
+  // Reset scroll position of news list container
+  const newsListElement = document.querySelector('.news-list')
+  if (newsListElement) {
+    newsListElement.scrollTop = 0
+  }
+})
 </script>
 
 <template>
@@ -24,20 +51,24 @@ const goToNewsDetail = (news) => {
 
     <div class="content">
       <!-- Tabs -->
-      <AssetTabs v-model="tabs" />
+      <AssetTabs v-model="tabs" :tabs="newTabList" />
 
-      <!-- Calendar -->
-      <div class="calendar-section">
-        <VDatePicker v-model="selectedDate" mode="date" :columns="1" />
-        <div class="selected-date">
-          {{ selectedDate.toLocaleDateString('ko-KR') }}
-        </div>
+      <!-- Date Filter Buttons -->
+      <div class="date-filter-section">
+        <button
+          v-for="filter in dateFilters"
+          :key="filter.key"
+          :class="['date-filter-btn', { active: selectedDateFilter === filter.key }]"
+          @click="selectDateFilter(filter.key)"
+        >
+          {{ filter.label }}
+        </button>
       </div>
 
       <!-- Search and Sort -->
       <div class="filter-bar">
-        <button class="sort-btn">
-          {{ sortOrder === 'latest' ? '최신순' : '인기순' }}
+        <button class="sort-btn" @click="toggleSortOrder">
+          {{ sortOrders[sortOrderIndex] }}
         </button>
         <div class="search-input-wrapper">
           <input
@@ -82,41 +113,83 @@ const goToNewsDetail = (news) => {
 
 <style scoped>
 .news-screen {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-primary);
+  overflow: hidden;
 }
 
 .content {
-  padding: 0 var(--spacing-lg) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
-.calendar-section {
-  margin-bottom: var(--spacing-lg);
+.content :deep(.asset-tabs) {
+  flex-shrink: 0;
 }
 
-.selected-date {
-  text-align: center;
-  padding: var(--spacing-sm);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
+.date-filter-section {
+  display: flex;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 4px;
+  margin: 0 var(--spacing-lg) var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.date-filter-btn {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-filter-btn.active {
+  background: #F59E0B;
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-medium);
+}
+
+.date-filter-btn:hover:not(.active) {
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .filter-bar {
   display: flex;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  margin: 0 var(--spacing-lg) var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .sort-btn {
   padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-tertiary);
+  background: #F59E0B;
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.sort-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sort-btn:active {
+  transform: translateY(0);
 }
 
 .search-input-wrapper {
@@ -149,6 +222,9 @@ const goToNewsDetail = (news) => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
 }
 
 .news-item {

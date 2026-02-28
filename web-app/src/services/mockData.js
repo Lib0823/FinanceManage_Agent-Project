@@ -168,7 +168,7 @@ export const mockTopNews = [
     source: '한국투자',
     description: '#코스피',
     date: '9:41 AM',
-    image: 'https://picsum.photos/200/150?random=1',
+    image: 'https://picsum.photos/200/150?random=2',
   },
   {
     id: 3,
@@ -176,21 +176,63 @@ export const mockTopNews = [
     source: '블룸버그',
     description: '#트럼프 #관세',
     date: '9:41 AM',
-    image: 'https://picsum.photos/200/150?random=1',
+    image: 'https://picsum.photos/200/150?random=3',
   },
   {
     id: 4,
     title: 'MS, 월가 목표가 하향에도 실적 기대에 반등',
     source: 'KB증권',
+    description: '#마이크로소프트 #실적',
     date: '9:41 AM',
-    image: 'https://picsum.photos/200/150?random=1',
+    image: 'https://picsum.photos/200/150?random=4',
   },
   {
     id: 5,
     title: '미국 증시 혼조.. 소비자심리지수 개선에 월가 기대감',
     source: '인베스팅',
+    description: '#미국증시 #소비자심리',
     date: '9:41 AM',
-    image: 'https://picsum.photos/200/150?random=1',
+    image: 'https://picsum.photos/200/150?random=5',
+  },
+  {
+    id: 6,
+    title: '애플, AI 기능 탑재한 아이폰 16 공개',
+    source: '로이터',
+    description: '#애플 #AI #아이폰16',
+    date: '8:30 AM',
+    image: 'https://picsum.photos/200/150?random=6',
+  },
+  {
+    id: 7,
+    title: '삼성전자, 3나노 공정 고객사 확보 본격화',
+    source: '매일경제',
+    description: '#삼성전자 #반도체 #3나노',
+    date: '7:45 AM',
+    image: 'https://picsum.photos/200/150?random=7',
+  },
+  {
+    id: 8,
+    title: '비트코인, 6만달러 돌파.. 기관투자 증가',
+    source: '코인데스크',
+    description: '#비트코인 #암호화폐',
+    date: '6:20 AM',
+    image: 'https://picsum.photos/200/150?random=8',
+  },
+  {
+    id: 9,
+    title: 'SK하이닉스, HBM3E 수요 폭발적 증가',
+    source: '연합뉴스',
+    description: '#SK하이닉스 #HBM #AI반도체',
+    date: '5:30 AM',
+    image: 'https://picsum.photos/200/150?random=9',
+  },
+  {
+    id: 10,
+    title: '미 연준, 금리 동결 시사.. 인플레이션 주시',
+    source: '월스트리트저널',
+    description: '#연준 #금리 #인플레이션',
+    date: '4:15 AM',
+    image: 'https://picsum.photos/200/150?random=10',
   },
 ]
 
@@ -292,7 +334,7 @@ export const mockNewsDetail = {
   title: '테슬라 로보택시 출시 예정',
   source: '블룸버그',
   date: '2024-10-24 18:34',
-  tags: ['#테슬라', '#로보택시', '#자율주행', '#출시', '#사이버캡'],
+  tags: ['#테슬라', '#로보택시', '#자율주행', '#출시', '#사이버캡', '#자동차'],
   image: 'https://picsum.photos/300/200?random=1',
   content: `테슬라가 개발한 로보택시 '사이버캡'입니다.
 
@@ -366,6 +408,9 @@ export const mockSearchResults = [
   { symbol: '000660', name: 'SK하이닉스', market: 'domestic', isFavorite: true },
   { symbol: '051910', name: 'LG화학', market: 'domestic', isFavorite: false },
   { symbol: '207940', name: '삼성바이오로직스', market: 'domestic', isFavorite: false },
+  { symbol: '005380', name: '현대차', market: 'domestic', isFavorite: false },
+  { symbol: '006400', name: '삼성SDI', market: 'domestic', isFavorite: false },
+  { symbol: '068270', name: '셀트리온', market: 'domestic', isFavorite: true },
 
   // 해외 주식
   { symbol: 'TSLA', name: '테슬라', market: 'overseas', isFavorite: true },
@@ -375,5 +420,7 @@ export const mockSearchResults = [
   { symbol: 'MSFT', name: '마이크로소프트', market: 'overseas', isFavorite: false },
   { symbol: 'NVDA', name: '엔비디아', market: 'overseas', isFavorite: false },
   { symbol: 'META', name: '메타', market: 'overseas', isFavorite: false },
-  { symbol: 'NFLX', name: '넷플릭스', market: 'overseas', isFavorite: false }
+  { symbol: 'NFLX', name: '넷플릭스', market: 'overseas', isFavorite: false },
+  { symbol: 'AMD', name: 'AMD', market: 'overseas', isFavorite: false },
+  { symbol: 'INTC', name: '인텔', market: 'overseas', isFavorite: false }
 ]

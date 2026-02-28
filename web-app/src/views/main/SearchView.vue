@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
 import InvestmentTabs from '@/components/common/InvestmentTabs.vue'
@@ -46,6 +46,14 @@ const toggleFavorite = (item) => {
 const goToCompany = (item) => {
   router.push(`/company/${item.symbol}`)
 }
+
+onMounted(() => {
+  // Reset scroll position of results container
+  const resultsContainer = document.querySelector('.results-container')
+  if (resultsContainer) {
+    resultsContainer.scrollTop = 0
+  }
+})
 </script>
 
 <template>
@@ -122,38 +130,48 @@ const goToCompany = (item) => {
         </div>
       </div>
     </div>
-
-    <!-- Spacer for bottom nav -->
-    <div class="bottom-spacer"></div>
   </div>
 </template>
 
 <style scoped>
 .search-screen {
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
-  padding-bottom: var(--bottom-nav-height);
+  overflow: hidden;
 }
 
 /* Header Override */
 .search-screen :deep(.app-header) {
   background: #0F172A;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
   padding: 0 var(--spacing-lg);
+  padding-bottom: var(--bottom-nav-height);
+}
+
+.content :deep(.investment-tabs) {
+  flex-shrink: 0;
 }
 
 .search-bar {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  padding: 0 var(--spacing-md);
   background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .search-btn {
@@ -161,7 +179,7 @@ const goToCompany = (item) => {
   border: none;
   color: var(--color-text-secondary);
   cursor: pointer;
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm);
   transition: color 0.2s;
 }
 
@@ -173,7 +191,8 @@ const goToCompany = (item) => {
   flex: 1;
   border: none;
   background: none;
-  font-size: var(--font-size-base);
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   outline: none;
 }
@@ -187,7 +206,10 @@ const goToCompany = (item) => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: var(--spacing-md);
-  min-height: 400px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .empty-state {
@@ -197,6 +219,7 @@ const goToCompany = (item) => {
   justify-content: center;
   padding: var(--spacing-2xl);
   gap: var(--spacing-sm);
+  flex: 1;
 }
 
 .empty-text {
@@ -209,6 +232,7 @@ const goToCompany = (item) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-bottom: var(--spacing-lg);
 }
 
 .result-item {
@@ -307,9 +331,5 @@ const goToCompany = (item) => {
 
 .star-btn:hover {
   opacity: 1;
-}
-
-.bottom-spacer {
-  height: var(--bottom-nav-height);
 }
 </style>
