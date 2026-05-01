@@ -1,9 +1,71 @@
-# api-server
+services:
+  postgres:
+    image: postgres:16
+    container_name: financemanage-postgres
+    environment:
+      POSTGRES_DB: financemanage
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/mvp-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - financemanage-network
+    restart: unless-stopped
 
-# web-app
+  # api-server (Spring Boot) - 추후 활성화
+  # api-server:
+  #   build: ./api-server
+  #   container_name: financemanage-api
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/financemanage
+  #     SPRING_DATASOURCE_USERNAME: admin
+  #     SPRING_DATASOURCE_PASSWORD: admin1234
+  #   networks:
+  #     - financemanage-network
 
-# ai-agent
+  # web-app (Vue3 + Nginx) - 추후 활성화
+  # web-app:
+  #   build: ./web-app
+  #   container_name: financemanage-web
+  #   ports:
+  #     - "3000:80"
+  #   networks:
+  #     - financemanage-network
 
-# postgres
+  # ai-agent (FastAPI) - 추후 활성화
+  # ai-agent:
+  #   build: ./ai-agent
+  #   container_name: financemanage-ai
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - financemanage-network
 
-# elasticsearch
+  # elasticsearch - 추후 활성화
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+  #   container_name: financemanage-es
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #   ports:
+  #     - "9200:9200"
+  #   networks:
+  #     - financemanage-network
+
+volumes:
+  postgres-data:
+
+networks:
+  financemanage-network:
+    driver: bridge
