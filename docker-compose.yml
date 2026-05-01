@@ -11,7 +11,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./database/mvp-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      # Schema is now managed by Liquibase in api-server
+      # See: api-server/src/main/resources/db/changelog/
     networks:
       - financemanage-network
     restart: unless-stopped

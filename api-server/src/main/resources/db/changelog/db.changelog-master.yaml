@@ -1,0 +1,37 @@
+databaseChangeLog:
+  # ========================================
+  # MVP Context Changelogs
+  # ========================================
+  # These changesets are executed when liquibase.contexts=mvp
+  # They represent the minimum viable product schema
+
+  # Phase 1: User Authentication & Settings
+  - include:
+      file: classpath:db/changelog/mvp/v1.0-users-auth.yaml
+      context: mvp
+
+  # Phase 2: AI Analysis Data Tables
+  - include:
+      file: classpath:db/changelog/mvp/v1.1-analysis-tables.yaml
+      context: mvp
+
+  # Phase 3: Trading Execution History
+  - include:
+      file: classpath:db/changelog/mvp/v1.2-trade-history.yaml
+      context: mvp
+
+  # ========================================
+  # Product Context Changelogs (Future)
+  # ========================================
+  # These changesets are executed when liquibase.contexts=product
+  # Add full production features here:
+  # - Multi-user support
+  # - Advanced permissions
+  # - Audit logs
+  # - Performance optimizations
+  # - Additional integrations
+
+  # Example (uncomment when ready):
+  # - include:
+  #     file: classpath:db/changelog/product/v2.0-multi-user.yaml
+  #     context: product

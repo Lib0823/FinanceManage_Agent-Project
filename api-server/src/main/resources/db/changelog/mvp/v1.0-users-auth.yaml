@@ -1,0 +1,310 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.0.1-create-users-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: username
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: VARCHAR(20)
+              - column:
+                  name: birth_date
+                  type: DATE
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_users_username
+            tableName: users
+            columns:
+              - column:
+                  name: username
+        - createIndex:
+            indexName: idx_users_email
+            tableName: users
+            columns:
+              - column:
+                  name: email
+        - setTableRemarks:
+            tableName: users
+            remarks: '사용자 기본 정보 (회원가입 지원)'
+        - setColumnRemarks:
+            tableName: users
+            columnName: username
+            remarks: '로그인 ID'
+        - setColumnRemarks:
+            tableName: users
+            columnName: email
+            remarks: '이메일'
+        - setColumnRemarks:
+            tableName: users
+            columnName: password
+            remarks: 'BCrypt 암호화된 비밀번호'
+
+  - changeSet:
+      id: 1.0.2-create-refresh-tokens-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_refresh_tokens_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: token
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: revoked_at
+                  type: TIMESTAMP
+        - createIndex:
+            indexName: idx_refresh_tokens_user
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_refresh_tokens_token
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: token
+        - setTableRemarks:
+            tableName: refresh_tokens
+            remarks: 'JWT 리프레시 토큰 관리'
+        - setColumnRemarks:
+            tableName: refresh_tokens
+            columnName: revoked_at
+            remarks: '토큰 무효화 시각'
+
+  - changeSet:
+      id: 1.0.3-create-user-kis-accounts-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: user_kis_accounts
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_user_kis_accounts_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: account_number
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: app_key
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: app_secret
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_user_kis_accounts_user
+            tableName: user_kis_accounts
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_user_kis_accounts_account
+            tableName: user_kis_accounts
+            unique: true
+            columns:
+              - column:
+                  name: account_number
+        - setTableRemarks:
+            tableName: user_kis_accounts
+            remarks: '사용자별 한국투자증권 API 키 및 계좌번호'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: app_key
+            remarks: 'KIS APP Key'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: app_secret
+            remarks: 'KIS APP Secret'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: is_verified
+            remarks: 'KIS API 연동 검증 완료 여부'
+
+  - changeSet:
+      id: 1.0.4-create-user-trade-config-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: user_trade_config
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_user_trade_config_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: order_amount
+                  type: BIGINT
+                  defaultValueNumeric: 1000000
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_holdings
+                  type: INT
+                  defaultValueNumeric: 10
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_type
+                  type: VARCHAR(20)
+                  defaultValue: 'market'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_user_trade_config_user
+            tableName: user_trade_config
+            columns:
+              - column:
+                  name: user_id
+        - setTableRemarks:
+            tableName: user_trade_config
+            remarks: '사용자별 자동매매 설정'
+        - setColumnRemarks:
+            tableName: user_trade_config
+            columnName: order_amount
+            remarks: '1회 주문 금액 (원)'
+        - setColumnRemarks:
+            tableName: user_trade_config
+            columnName: max_holdings
+            remarks: '최대 보유 종목 수'
+        - setColumnRemarks:
+            tableName: user_trade_config
+            columnName: order_type
+            remarks: '주문 유형 (market: 시장가, limit: 지정가)'
+        - setColumnRemarks:
+            tableName: user_trade_config
+            columnName: is_active
+            remarks: '자동매매 활성화 여부 (ON/OFF)'

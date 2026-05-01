@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.2.1-create-trade-history-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_trade_history_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: stock_code
+                  type: "VARCHAR(10)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stock_name
+                  type: "VARCHAR(50)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_type
+                  type: "VARCHAR(10)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: "NUMERIC(12,2)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: executed_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: kis_order_no
+                  type: "VARCHAR(50)"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_trade_history_user
+            tableName: trade_history
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_trade_history_stock
+            tableName: trade_history
+            columns:
+              - column:
+                  name: stock_code
+        - createIndex:
+            indexName: idx_trade_history_date
+            tableName: trade_history
+            columns:
+              - column:
+                  name: executed_at
+        - setTableRemarks:
+            tableName: trade_history
+            remarks: '자동매매 체결 이력'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: order_type
+            remarks: '주문 유형 (buy: 매수, sell: 매도)'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: quantity
+            remarks: '체결 수량'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: price
+            remarks: '체결 단가'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: executed_at
+            remarks: '체결 시각'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: kis_order_no
+            remarks: 'KIS API 주문번호'
