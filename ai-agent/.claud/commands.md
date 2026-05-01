@@ -40,13 +40,13 @@ poetry add --group dev pytest
 
 ```bash
 # Uvicorn 실행
-uvicorn app.main:app --reload --port 5000
+uvicorn app.main:app --reload --port 8000
 
 # 호스트 지정
-uvicorn app.main:app --reload --host 0.0.0.0 --port 5000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # 워커 수 지정 (프로덕션)
-uvicorn app.main:app --workers 4 --port 5000
+uvicorn app.main:app --workers 4 --port 8000
 ```
 
 ## 테스트
@@ -114,7 +114,7 @@ python scripts/evaluate_model.py
 docker build -t ai-agent:latest .
 
 # 컨테이너 실행
-docker run -p 5000:5000 ai-agent:latest
+docker run -p 8000:8000 ai-agent:latest
 ```
 
 ## 유용한 엔드포인트

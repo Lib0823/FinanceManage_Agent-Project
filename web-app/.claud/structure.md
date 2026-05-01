@@ -1,5 +1,54 @@
 # Web App - Project Structure
 
+> 상태: **MVP 개발 중** (화면 구현 완료, API 연동 진행)
+
+## 개발 범위 (현재 MVP)
+
+### 구현 완료 화면
+1. **인증 관련**
+   - 스플래시 (/)
+   - 온보딩 (/welcome)
+   - 로그인 (/login)
+   - 회원가입 (/register)
+   - 금융정보 등록 (/register/finance)
+   - 약관 동의 (/terms)
+   - 비밀번호 재설정 (/reset-password)
+
+2. **메인 화면 (하단 네비)**
+   - 홈 (/home) - 시장 현황, 보유 자산 요약, 오늘 매매 내역
+   - 내 자산 (/assets) - 자산 탭 (국내/미국/코인), 보유 종목
+   - AI 투자 (/bot) - AI 분석 결과, 자동매매 ON/OFF
+   - 종목 검색 (/search)
+   - 관심 종목 (/favorites)
+   - 거래 내역 (/transactions)
+   - 프로필 (/profile)
+
+3. **상세 화면**
+   - 자산 상세 (/assets/detail)
+   - 기업 상세 (/company/:symbol) - 차트, 재무제표, 공시, AI 분석
+   - 매수/매도 (/trading/:symbol)
+   - 뉴스 목록 (/news)
+   - 뉴스 상세 (/news/:id)
+   - 설정 (/settings)
+
+### 추가 필요 화면
+4. **오늘의 분석 (AI 분석 결과)**
+   - 경로: `/analysis` (또는 `/bot`에 통합)
+   - 4개 탭 구성:
+     - 종합분석: Gemini 매수/매도 TOP3 + 히트맵 차트
+     - 정량분석: 수급 TOP3 + 피처 차트
+     - 감성분석: 감성 상위/하위 + 감성 차트
+     - 시계열: Prophet 예측 + 추세 집계
+
+### API 연동 상태
+- **완료**: 인증 (로그인, 회원가입)
+- **진행 중**:
+  - 자산/보유 종목 (KIS API)
+  - 거래 내역 조회
+  - AI 분석 결과 (FastAPI 연동)
+  - 기업 상세 (DART API)
+- **대기**: 뉴스, 시장 지수
+
 ## 디렉토리 구조
 
 ```
