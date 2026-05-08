@@ -20,6 +20,16 @@ databaseChangeLog:
       file: classpath:db/changelog/mvp/v1.2-trade-history.yaml
       context: mvp
 
+  # Phase 4: KIS API Integration & Schema Updates
+  - include:
+      file: classpath:db/changelog/mvp/v1.3-schema-updates.yaml
+      context: mvp
+
+  # Phase 5: Test Data for MVP Development
+  - include:
+      file: classpath:db/changelog/mvp/v1.4-test-data.yaml
+      context: mvp
+
   # ========================================
   # Product Context Changelogs (Future)
   # ========================================

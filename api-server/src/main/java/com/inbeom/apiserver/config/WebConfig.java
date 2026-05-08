@@ -11,7 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
             .allowedOrigins(
-                "http://localhost:5173",  // Vue3 dev server
+                "http://localhost:5173",  // Vue3 dev server (default)
+                "http://localhost:5174",  // Vue3 dev server (alternative port)
                 "http://localhost:3000"   // Nginx production
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")

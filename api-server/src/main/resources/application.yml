@@ -59,14 +59,34 @@ server:
 
 # JWT Configuration
 jwt:
-  secret: financemanage-secret-key-for-jwt-token-generation-minimum-32-characters
+  secret: ${JWT_SECRET:financemanage-secret-key-for-jwt-token-generation-minimum-32-characters-production-ready}
   access-token-expiration: 3600000    # 1 hour (ms)
   refresh-token-expiration: 86400000  # 24 hours (ms)
+
+# Jasypt Configuration (Updated to secure algorithm)
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD:default-encryption-key-change-in-production-minimum-32-characters}
+    algorithm: PBEWITHHMACSHA512ANDAES_256
+    key-obtention-iterations: 1000
+    pool-size: 1
+    provider-name: SunJCE
+    salt-generator-classname: org.jasypt.salt.RandomSaltGenerator
+    iv-generator-classname: org.jasypt.iv.RandomIvGenerator
+    string-output-type: base64
+
+# KIS API Configuration
+kis:
+  base-url: https://openapi.koreainvestment.com:9443
+  app-key: ${KIS_APP_KEY:your-kis-app-key}
+  app-secret: ${KIS_APP_SECRET:your-kis-app-secret}
+  token-cache-ttl: 86400000  # 24 hours (ms)
 
 # CORS Configuration
 cors:
   allowed-origins:
-    - http://localhost:5173  # Vue3 dev server
+    - http://localhost:5173  # Vue3 dev server (default)
+    - http://localhost:5174  # Vue3 dev server (alternative port)
     - http://localhost:3000  # Nginx production
   allowed-methods:
     - GET

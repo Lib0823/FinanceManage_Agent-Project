@@ -1,0 +1,272 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-insert-test-user
+      author: claude
+      context: mvp
+      comment: Insert test user for MVP development
+      validCheckSum: 9:4f240d573f73b3efd5097802c973f48d
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: username
+                  value: testuser
+              - column:
+                  name: password
+                  value: $2a$10$/U1REQmacvXIn72utqxk6eXs9dyBAV56fnOeRwMym7TTDry48stFC  # "password123" encoded with BCrypt
+              - column:
+                  name: email
+                  value: test@example.com
+              - column:
+                  name: name
+                  value: 테스트유저
+              - column:
+                  name: phone
+                  value: 01012345678
+              - column:
+                  name: birth_date
+                  valueDate: 1990-01-01
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: v1.4-insert-test-kis-account
+      author: claude
+      context: mvp
+      comment: Insert test KIS account (mock credentials for testing)
+      changes:
+        - insert:
+            tableName: user_kis_accounts
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: account_number
+                  value: "50000000"
+              - column:
+                  name: account_product_code
+                  value: "01"
+              - column:
+                  name: app_key
+                  value: ENC(test_encrypted_app_key_placeholder)
+              - column:
+                  name: app_secret
+                  value: ENC(test_encrypted_app_secret_placeholder)
+              - column:
+                  name: is_verified
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: v1.4-insert-test-trade-config
+      author: claude
+      context: mvp
+      comment: Insert test trade configuration
+      changes:
+        - insert:
+            tableName: user_trade_config
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: order_amount
+                  valueNumeric: 1000000
+              - column:
+                  name: max_holdings
+                  valueNumeric: 10
+              - column:
+                  name: order_type
+                  value: market
+              - column:
+                  name: is_active
+                  valueBoolean: false
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: v1.4-insert-test-trade-history
+      author: claude
+      context: mvp
+      comment: Insert sample trade history for testing
+      changes:
+        - insert:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: order_number
+                  value: "2024010100001"
+              - column:
+                  name: stock_code
+                  value: "005930"
+              - column:
+                  name: stock_name
+                  value: 삼성전자
+              - column:
+                  name: order_type
+                  value: BUY
+              - column:
+                  name: order_status
+                  value: COMPLETED
+              - column:
+                  name: quantity
+                  valueNumeric: 10
+              - column:
+                  name: order_price
+                  valueNumeric: 71500
+              - column:
+                  name: executed_price
+                  valueNumeric: 71500
+              - column:
+                  name: ordered_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '7 days'
+              - column:
+                  name: executed_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '7 days'
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '7 days'
+
+        - insert:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: order_number
+                  value: "2024010100002"
+              - column:
+                  name: stock_code
+                  value: "035420"
+              - column:
+                  name: stock_name
+                  value: NAVER
+              - column:
+                  name: order_type
+                  value: BUY
+              - column:
+                  name: order_status
+                  value: COMPLETED
+              - column:
+                  name: quantity
+                  valueNumeric: 5
+              - column:
+                  name: order_price
+                  valueNumeric: 215000
+              - column:
+                  name: executed_price
+                  valueNumeric: 215000
+              - column:
+                  name: ordered_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '5 days'
+              - column:
+                  name: executed_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '5 days'
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '5 days'
+
+        - insert:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: order_number
+                  value: "2024010100003"
+              - column:
+                  name: stock_code
+                  value: "035720"
+              - column:
+                  name: stock_name
+                  value: 카카오
+              - column:
+                  name: order_type
+                  value: SELL
+              - column:
+                  name: order_status
+                  value: COMPLETED
+              - column:
+                  name: quantity
+                  valueNumeric: 3
+              - column:
+                  name: order_price
+                  valueNumeric: 52300
+              - column:
+                  name: executed_price
+                  valueNumeric: 52300
+              - column:
+                  name: ordered_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '2 days'
+              - column:
+                  name: executed_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '2 days'
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '2 days'
+
+        - insert:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: order_number
+                  value: "2024010100004"
+              - column:
+                  name: stock_code
+                  value: "000660"
+              - column:
+                  name: stock_name
+                  value: SK하이닉스
+              - column:
+                  name: order_type
+                  value: BUY
+              - column:
+                  name: order_status
+                  value: PENDING
+              - column:
+                  name: quantity
+                  valueNumeric: 8
+              - column:
+                  name: order_price
+                  valueNumeric: 142000
+              - column:
+                  name: executed_price
+                  valueNumeric: 0
+              - column:
+                  name: ordered_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '1 hour'
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP - INTERVAL '1 hour'

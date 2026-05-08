@@ -1,0 +1,194 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.3.1-add-account-product-code-to-kis-accounts
+      author: claude
+      context: mvp
+      comment: "Add account_product_code column to user_kis_accounts table for KIS API integration"
+      changes:
+        - addColumn:
+            tableName: user_kis_accounts
+            columns:
+              - column:
+                  name: account_product_code
+                  type: VARCHAR(10)
+                  defaultValue: '01'
+                  constraints:
+                    nullable: false
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: account_product_code
+            remarks: 'KIS 계좌상품코드 (기본값: 01)'
+
+  - changeSet:
+      id: 1.3.2-update-kis-accounts-table-remarks
+      author: claude
+      context: mvp
+      comment: "Update table and column remarks for encryption information"
+      changes:
+        - setTableRemarks:
+            tableName: user_kis_accounts
+            remarks: '사용자별 한국투자증권 API 키 및 계좌번호 (Jasypt 암호화 저장)'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: account_number
+            remarks: 'KIS 계좌번호 (8자리)'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: app_key
+            remarks: 'KIS APP Key (Jasypt 암호화 저장)'
+        - setColumnRemarks:
+            tableName: user_kis_accounts
+            columnName: app_secret
+            remarks: 'KIS APP Secret (Jasypt 암호화 저장)'
+
+  - changeSet:
+      id: 1.3.3-add-order-number-to-trade-history
+      author: claude
+      context: mvp
+      comment: "Add order_number column to trade_history table"
+      changes:
+        - addColumn:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: order_number
+                  type: VARCHAR(50)
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: order_number
+            remarks: 'KIS API 주문번호 (ODNO)'
+
+  - changeSet:
+      id: 1.3.4-add-order-status-to-trade-history
+      author: claude
+      context: mvp
+      comment: "Add order_status column to trade_history table"
+      changes:
+        - addColumn:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: order_status
+                  type: VARCHAR(20)
+                  defaultValue: 'PENDING'
+                  constraints:
+                    nullable: false
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: order_status
+            remarks: '주문 상태 (PENDING: 접수, EXECUTED: 체결, CANCELLED: 취소, FAILED: 실패)'
+
+  - changeSet:
+      id: 1.3.5-rename-price-columns-in-trade-history
+      author: claude
+      context: mvp
+      comment: "Rename price column to order_price and add executed_price"
+      changes:
+        - renameColumn:
+            tableName: trade_history
+            oldColumnName: price
+            newColumnName: order_price
+            columnDataType: NUMERIC(12, 2)
+        - addColumn:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: executed_price
+                  type: NUMERIC(12, 2)
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: order_price
+            remarks: '주문 단가'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: executed_price
+            remarks: '체결 단가'
+
+  - changeSet:
+      id: 1.3.6-add-executed-quantity-to-trade-history
+      author: claude
+      context: mvp
+      comment: "Add executed_quantity column to track partial fills"
+      changes:
+        - addColumn:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: executed_quantity
+                  type: INT
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: executed_quantity
+            remarks: '체결 수량'
+
+  - changeSet:
+      id: 1.3.7-rename-executed-at-to-ordered-at
+      author: claude
+      context: mvp
+      comment: "Rename executed_at to ordered_at and add new executed_at"
+      changes:
+        - renameColumn:
+            tableName: trade_history
+            oldColumnName: executed_at
+            newColumnName: ordered_at
+            columnDataType: TIMESTAMP
+        - addColumn:
+            tableName: trade_history
+            columns:
+              - column:
+                  name: executed_at
+                  type: TIMESTAMP
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: ordered_at
+            remarks: '주문 시각'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: executed_at
+            remarks: '체결 시각'
+
+  - changeSet:
+      id: 1.3.8-drop-kis-order-no-from-trade-history
+      author: claude
+      context: mvp
+      comment: "Drop kis_order_no column (replaced by order_number)"
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: trade_history
+            columnName: kis_order_no
+      changes:
+        - dropColumn:
+            tableName: trade_history
+            columnName: kis_order_no
+
+  - changeSet:
+      id: 1.3.9-create-order-status-index
+      author: claude
+      context: mvp
+      comment: "Add index for order_status for filtering"
+      changes:
+        - createIndex:
+            indexName: idx_trade_history_status
+            tableName: trade_history
+            columns:
+              - column:
+                  name: order_status
+
+  - changeSet:
+      id: 1.3.10-update-trade-history-table-remarks
+      author: claude
+      context: mvp
+      comment: "Update table remarks for trade_history"
+      changes:
+        - setTableRemarks:
+            tableName: trade_history
+            remarks: '주문 및 체결 이력 (자동매매/수동매매)'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: order_type
+            remarks: '주문 유형 (BUY: 매수, SELL: 매도)'
+        - setColumnRemarks:
+            tableName: trade_history
+            columnName: quantity
+            remarks: '주문 수량'
