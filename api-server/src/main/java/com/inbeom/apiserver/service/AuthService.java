@@ -5,6 +5,7 @@ import com.inbeom.apiserver.domain.User;
 import com.inbeom.apiserver.domain.UserKisAccount;
 import com.inbeom.apiserver.domain.UserTradeConfig;
 import com.inbeom.apiserver.dto.auth.*;
+import com.inbeom.apiserver.exception.*;
 import com.inbeom.apiserver.repository.RefreshTokenRepository;
 import com.inbeom.apiserver.repository.UserKisAccountRepository;
 import com.inbeom.apiserver.repository.UserRepository;
@@ -33,15 +34,15 @@ public class AuthService {
     public RegisterResponse register(RegisterRequest request) {
         // 비밀번호 확인 검증
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
-            throw new IllegalArgumentException("Password confirmation does not match");
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH, "Password confirmation does not match");
         }
 
         // 중복 확인
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new BusinessException(ErrorCode.USERNAME_DUPLICATE, "Username already exists");
         }
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new BusinessException(ErrorCode.EMAIL_DUPLICATE, "Email already exists");
         }
 
         // User 생성
@@ -88,15 +89,19 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         // 사용자 조회
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Invalid username or password");
         }
 
-        // JWT 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername());
+        // KIS Account 조회
+        UserKisAccount kisAccount = kisAccountRepository.findByUser(user)
+                .orElseThrow(() -> new KisAccountNotFoundException(user.getId()));
+
+        // JWT 토큰 생성 (userId, kisAccountId 포함)
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), user.getId(), kisAccount.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
 
         // RefreshToken 저장
@@ -121,15 +126,15 @@ public class AuthService {
     public void resetPassword(ResetPasswordRequest request) {
         // 비밀번호 확인 검증
         if (!request.getNewPassword().equals(request.getPasswordConfirm())) {
-            throw new IllegalArgumentException("Password confirmation does not match");
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH, "Password confirmation does not match");
         }
 
         // 사용자 조회 및 본인 인증 (username + phone)
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("User not found or phone number mismatch"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PHONE_MISMATCH, "User not found or phone number mismatch"));
 
         if (!user.getPhone().equals(request.getPhone())) {
-            throw new IllegalArgumentException("User not found or phone number mismatch");
+            throw new BusinessException(ErrorCode.PHONE_MISMATCH, "User not found or phone number mismatch");
         }
 
         // 비밀번호 변경
@@ -159,27 +164,47 @@ public class AuthService {
 
         // 토큰 검증
         if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
-            throw new BadCredentialsException("Invalid refresh token");
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid refresh token");
         }
 
         // RefreshToken 조회
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new BadCredentialsException("Refresh token not found"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_NOT_FOUND, "Refresh token not found"));
 
         // 토큰이 revoke 되었는지 확인
         if (refreshToken.getRevokedAt() != null) {
-            throw new BadCredentialsException("Refresh token has been revoked");
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_REVOKED, "Refresh token has been revoked");
         }
 
         // 새로운 AccessToken 생성
         String username = jwtTokenProvider.getUsernameFromToken(refreshTokenValue);
-        String newAccessToken = jwtTokenProvider.generateAccessToken(username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        UserKisAccount kisAccount = kisAccountRepository.findByUser(user)
+                .orElseThrow(() -> new KisAccountNotFoundException(user.getId()));
+
+        String newAccessToken = jwtTokenProvider.generateAccessToken(username, user.getId(), kisAccount.getId());
 
         return RefreshTokenResponse.builder()
                 .accessToken(newAccessToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtTokenProvider.getAccessTokenExpiration())
                 .build();
+    }
+
+    @Transactional
+    public void logout(String refreshTokenValue) {
+        // RefreshToken 조회 및 revoke
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_NOT_FOUND, "Refresh token not found"));
+
+        if (refreshToken.getRevokedAt() != null) {
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_REVOKED, "Refresh token has already been revoked");
+        }
+
+        refreshToken.revoke();
+        refreshTokenRepository.save(refreshToken);
     }
 
     private void saveRefreshToken(User user, String token) {

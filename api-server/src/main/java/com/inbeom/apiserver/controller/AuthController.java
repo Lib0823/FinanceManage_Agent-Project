@@ -18,33 +18,21 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            LoginResponse response = authService.login(request);
-            return ApiResponse.success("Login successful", response);
-        } catch (BadCredentialsException e) {
-            return ApiResponse.error("Invalid credentials");
-        }
+        LoginResponse response = authService.login(request);
+        return ApiResponse.success("Login successful", response);
     }
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            RegisterResponse response = authService.register(request);
-            return ApiResponse.success("Registration successful", response);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
-        }
+        RegisterResponse response = authService.register(request);
+        return ApiResponse.success("Registration successful", response);
     }
 
     @PostMapping("/reset-password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        try {
-            authService.resetPassword(request);
-            return ApiResponse.success("Password reset successful", null);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
-        }
+        authService.resetPassword(request);
+        return ApiResponse.success("Password reset successful", null);
     }
 
     @GetMapping("/check-username")
@@ -63,11 +51,13 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ApiResponse<RefreshTokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        try {
-            RefreshTokenResponse response = authService.refreshToken(request);
-            return ApiResponse.success("Token refreshed", response);
-        } catch (BadCredentialsException e) {
-            return ApiResponse.error(e.getMessage());
-        }
+        RefreshTokenResponse response = authService.refreshToken(request);
+        return ApiResponse.success("Token refreshed", response);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ApiResponse.success("Logout successful", null);
     }
 }
