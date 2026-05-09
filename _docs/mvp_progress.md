@@ -7,9 +7,9 @@
 | 대분류 | 설명 | 상태 |
 |--------|------|------|
 | 🔐 로그인/인증 | 사용자 인증 및 회원가입 | ✅ 완료 |
-| 👤 내정보 | 사용자 정보 관리 | ⚠️ 부분 완료 |
+| 👤 내정보 | 사용자 정보 관리 | ✅ 완료 |
 | 🤖 AI분석 | AI 기반 주식 분석 | 📅 계획 |
-| 📊 거래내역 | 거래 이력 조회 | 📅 계획 |
+| 📊 거래내역 | 거래 이력 조회 | ✅ 완료 |
 
 ---
 
@@ -151,21 +151,24 @@
 ### 사용자 정보 조회
 | 항목 | API-Server | Web-App | 연동 | 비고 |
 |------|-----------|---------|------|------|
-| 내 정보 조회 | ⏸️ | ⏸️ | ⏸️ | API 미구현 |
-| 프로필 수정 | ⏸️ | ⏸️ | ⏸️ | API 미구현 |
+| GET /users/me | ✅ | ✅ | ✅ | UserController.java:29-40, UserService.java:95-109 |
+| PUT /users/me | ✅ | ✅ | ✅ | UserController.java:47-60, UserService.java:115-144, ProfileView.vue:58-102 |
 
-### 투자 설정 관리
+### 설정 화면
 | 항목 | API-Server | Web-App | 연동 | 비고 |
 |------|-----------|---------|------|------|
-| GET /users/trade-config | ✅ | ✅ | ✅ | UserController.java:27-39, SettingsView.vue:55-68 |
-| PUT /users/trade-config | ✅ | ✅ | ✅ | UserController.java:45-58, SettingsView.vue:70-95 |
-| 투자 설정 화면 | ✅ | ✅ | ✅ | SettingsView.vue (자동거래, 주문금액, 최대보유종목수, 주문유형) |
+| GET /users/settings | ✅ | ✅ | ✅ | UserController.java:46-58, SettingsView.vue:46-65 |
+| PUT /users/settings | ✅ | ✅ | ✅ | UserController.java:64-77, SettingsView.vue:67-89 |
+| 관심 자산 순위 | ✅ | ✅ | ✅ | user_settings.asset_order (JSONB), 드래그앤드롭 지원 |
+| 일반 설정 | ✅ | ✅ | ✅ | user_settings.dark_mode, auto_login (BOOLEAN) |
+| 알림 설정 | ✅ | ✅ | ✅ | user_settings.notifications (JSONB) |
 
 ### 계정 관리
 | 항목 | API-Server | Web-App | 연동 | 비고 |
 |------|-----------|---------|------|------|
-| DELETE /users/me | ✅ | ✅ | ✅ | UserController.java:64-77, SettingsView.vue:108-128 |
+| DELETE /users/me | ✅ | ✅ | ✅ | UserController.java:83-95, SettingsView.vue:108-122 |
 | 회원 탈퇴 화면 | ✅ | ✅ | ✅ | SettingsView.vue (확인 다이얼로그 + API 호출 + /welcome 이동) |
+| 로그아웃 | ✅ | ✅ | ✅ | SettingsView.vue:91-97 (AuthStore 연동 + /login 이동) |
 
 ---
 
@@ -181,12 +184,20 @@
 
 ## 📊 거래내역
 
+### 거래내역 조회 (Trade History)
 | 항목 | API-Server | Web-App | 연동 | 비고 |
 |------|-----------|---------|------|------|
-| GET /trading/history | ✅ | ⏸️ | ⏸️ | TradingController.java 구현 완료 |
-| 거래내역 화면 | ⏸️ | ⏸️ | ⏸️ | Vue 컴포넌트 미구현 |
-| POST /trading/buy | ✅ | ⏸️ | ⏸️ | TradingController.java 구현 완료 |
-| POST /trading/sell | ✅ | ⏸️ | ⏸️ | TradingController.java 구현 완료 |
+| GET /trading/history | ✅ | ✅ | ✅ | KIS API (VTTC8001R) 직접 조회, 최근 3개월 |
+| 거래내역 화면 | ✅ | ✅ | ✅ | TransactionsView.vue, tradingApi.getHistory() |
+| KIS API 연동 | ✅ | - | ✅ | TradingService.java:140-192, KisDailyCcldResponse DTO |
+| 응답 DTO | ✅ | - | ✅ | TradeHistoryResponse (id, stockCode, stockName, orderType, orderStatus, etc.) |
+| Data Source | KIS API | - | - | **DB 저장 없음** (데이터 정합성 보장) |
+
+### 주문 실행 (Trading Orders)
+| 항목 | API-Server | Web-App | 연동 | 비고 |
+|------|-----------|---------|------|------|
+| POST /trading/buy | ✅ | ⏸️ | ⏸️ | KIS API (VTTC0802U), DB 저장 제거 |
+| POST /trading/sell | ✅ | ⏸️ | ⏸️ | KIS API (VTTC0801U), DB 저장 제거 |
 
 ---
 
@@ -203,6 +214,21 @@
 
 ## 최종 업데이트
 
-**작성일**: 2025-05-08
+**작성일**: 2026-05-09
 **작성자**: Claude Code
-**다음 작업**: AI 분석 및 거래내역 기능 개발
+**다음 작업**: AI 분석 기능 개발
+**최근 변경사항** (거래내역 기능):
+- **KIS API 직접 조회 방식으로 리팩토링** (데이터 정합성 보장)
+- KisDailyCcldResponse DTO 생성 (TR_ID: VTTC8001R, 최근 3개월 조회)
+- TradeHistoryResponse DTO 생성 (id, stockCode, stockName, orderType, orderStatus, etc.)
+- TradingService.getTradeHistory() KIS API 호출로 변경 (TradingService.java:140-280)
+- TradingController return type 변경 (List<TradeHistory> → List<TradeHistoryResponse>)
+- **trade_history 테이블 DB 저장 제거** (executeBuy/executeSell 메서드)
+- TradeHistoryRepository 의존성 제거 (TradingService, UserService)
+- TransactionsView.vue 기존 연동 확인 완료 (tradingApi.getHistory())
+- 거래내역 화면 완전 연동 완료
+
+**이전 변경사항**:
+- user_settings 테이블 추가 및 DB 저장 기능 구현
+- 사용자 프로필 조회/수정 API 구현 (GET /users/me, PUT /users/me)
+- 로그인/인증 및 내정보 기능 100% 완료
