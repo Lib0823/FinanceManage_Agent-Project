@@ -1,7 +1,7 @@
 package com.inbeom.apiserver.controller;
 
-import com.inbeom.apiserver.domain.TradeHistory;
 import com.inbeom.apiserver.dto.common.ApiResponse;
+import com.inbeom.apiserver.dto.trade.TradeHistoryResponse;
 import com.inbeom.apiserver.dto.trade.TradeRequest;
 import com.inbeom.apiserver.service.TradingService;
 import com.inbeom.apiserver.util.JwtTokenProvider;
@@ -79,19 +79,19 @@ public class TradingController {
 
     /**
      * GET /api/trading/history
-     * Get user's trade history
+     * Get trade history from KIS API (최근 3개월)
      */
     @GetMapping("/history")
-    public ResponseEntity<ApiResponse<List<TradeHistory>>> getHistory(
+    public ResponseEntity<ApiResponse<List<TradeHistoryResponse>>> getHistory(
             @RequestHeader("Authorization") String authHeader
     ) {
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-        List<TradeHistory> history = tradingService.getTradeHistory(userId);
+        List<TradeHistoryResponse> history = tradingService.getTradeHistory(userId);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Trade history retrieved successfully", history)
+                ApiResponse.success("Trade history retrieved from KIS API successfully", history)
         );
     }
 }

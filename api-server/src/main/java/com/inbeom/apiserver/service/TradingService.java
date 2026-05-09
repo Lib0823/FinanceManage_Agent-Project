@@ -1,23 +1,26 @@
 package com.inbeom.apiserver.service;
 
 import com.inbeom.apiserver.client.KisApiClient;
-import com.inbeom.apiserver.domain.TradeHistory;
 import com.inbeom.apiserver.domain.User;
+import com.inbeom.apiserver.dto.kis.KisDailyCcldResponse;
+import com.inbeom.apiserver.dto.trade.TradeHistoryResponse;
 import com.inbeom.apiserver.exception.UserNotFoundException;
-import com.inbeom.apiserver.repository.TradeHistoryRepository;
 import com.inbeom.apiserver.repository.UserRepository;
 import com.inbeom.apiserver.service.KisAuthService.KisCredentials;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,13 +29,12 @@ public class TradingService {
 
     private final KisAuthService kisAuthService;
     private final KisApiClient kisApiClient;
-    private final TradeHistoryRepository tradeHistoryRepository;
     private final UserRepository userRepository;
 
     /**
      * Execute buy order via KIS API (VTTC0802U)
+     * Note: Trade history is fetched from KIS API directly, not stored in DB
      */
-    @Transactional
     public Map<String, Object> executeBuy(Long userId, Long kisAccountId, String stockCode, String stockName,
                                            Integer quantity, BigDecimal orderPrice) {
         // 1. Get KIS credentials and token
@@ -59,31 +61,16 @@ public class TradingService {
                 Map.class
         );
 
-        // 4. Save trade history
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-
-        TradeHistory tradeHistory = TradeHistory.builder()
-                .user(user)
-                .orderNumber(extractOrderNumber(response.getBody()))
-                .stockCode(stockCode)
-                .stockName(stockName)
-                .orderType("BUY")
-                .orderStatus("PENDING")
-                .quantity(quantity)
-                .orderPrice(orderPrice)
-                .orderedAt(LocalDateTime.now())
-                .build();
-
-        tradeHistoryRepository.save(tradeHistory);
+        log.info("Buy order executed for userId={}, stockCode={}, quantity={}, orderNumber={}",
+                userId, stockCode, quantity, extractOrderNumber(response.getBody()));
 
         return response.getBody();
     }
 
     /**
      * Execute sell order via KIS API (VTTC0801U)
+     * Note: Trade history is fetched from KIS API directly, not stored in DB
      */
-    @Transactional
     public Map<String, Object> executeSell(Long userId, Long kisAccountId, String stockCode, String stockName,
                                             Integer quantity, BigDecimal orderPrice) {
         String kisToken = kisAuthService.getKisAccessToken(kisAccountId);
@@ -107,31 +94,156 @@ public class TradingService {
                 Map.class
         );
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-
-        TradeHistory tradeHistory = TradeHistory.builder()
-                .user(user)
-                .orderNumber(extractOrderNumber(response.getBody()))
-                .stockCode(stockCode)
-                .stockName(stockName)
-                .orderType("SELL")
-                .orderStatus("PENDING")
-                .quantity(quantity)
-                .orderPrice(orderPrice)
-                .orderedAt(LocalDateTime.now())
-                .build();
-
-        tradeHistoryRepository.save(tradeHistory);
+        log.info("Sell order executed for userId={}, stockCode={}, quantity={}, orderNumber={}",
+                userId, stockCode, quantity, extractOrderNumber(response.getBody()));
 
         return response.getBody();
     }
 
     /**
-     * Get trade history for user
+     * Get trade history from KIS API (VTTC8001R)
+     * 최근 3개월 거래내역 조회
      */
-    public List<TradeHistory> getTradeHistory(Long userId) {
-        return tradeHistoryRepository.findByUserIdOrderByOrderedAtDesc(userId);
+    public List<TradeHistoryResponse> getTradeHistory(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        // 1. Get KIS account from user
+        Long kisAccountId = user.getKisAccount().getId();
+
+        // 2. Get KIS credentials and token
+        String kisToken = kisAuthService.getKisAccessToken(kisAccountId);
+        KisCredentials credentials = kisAuthService.getKisCredentials(kisAccountId);
+
+        // 3. Build query parameters for last 3 months
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusMonths(3);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("CANO", credentials.accountNumber());
+        queryParams.put("ACNT_PRDT_CD", credentials.accountProductCode());
+        queryParams.put("INQR_STRT_DT", startDate.format(formatter));
+        queryParams.put("INQR_END_DT", endDate.format(formatter));
+        queryParams.put("SLL_BUY_DVSN_CD", "00");  // 00: 전체, 01: 매도, 02: 매수
+        queryParams.put("INQR_DVSN", "00");  // 00: 역순
+        queryParams.put("PDNO", "");  // 전체 종목
+        queryParams.put("CCLD_DVSN", "00");  // 00: 전체
+        queryParams.put("ORD_GNO_BRNO", "");
+        queryParams.put("ODNO", "");
+        queryParams.put("INQR_DVSN_3", "00");
+        queryParams.put("INQR_DVSN_1", "");
+        queryParams.put("CTX_AREA_FK100", "");
+        queryParams.put("CTX_AREA_NK100", "");
+
+        // 4. Call KIS API
+        ResponseEntity<KisDailyCcldResponse> response = kisApiClient.get(
+                "/uapi/domestic-stock/v1/trading/inquire-daily-ccld",
+                "VTTC8001R",
+                kisToken,
+                credentials.appKey(),
+                credentials.appSecret(),
+                queryParams,
+                KisDailyCcldResponse.class
+        );
+
+        // 5. Map KIS response to TradeHistoryResponse
+        if (response.getBody() == null || response.getBody().getOutput1() == null) {
+            log.warn("Empty trade history response from KIS API for userId={}", userId);
+            return new ArrayList<>();
+        }
+
+        return response.getBody().getOutput1().stream()
+                .map(this::mapToTradeHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Map KIS DailyCcldItem to TradeHistoryResponse
+     */
+    private TradeHistoryResponse mapToTradeHistoryResponse(KisDailyCcldResponse.DailyCcldItem item) {
+        // Parse date and time
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");
+        DateTimeFormatter dateDisplayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeDisplayFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+        LocalDate orderDate = LocalDate.parse(item.getOrdDt(), dateFormatter);
+        LocalDateTime orderedAt;
+
+        if (item.getOrdTmd() != null && !item.getOrdTmd().isEmpty()) {
+            String ordTmd = item.getOrdTmd().length() == 6 ? item.getOrdTmd() : String.format("%06d", Integer.parseInt(item.getOrdTmd()));
+            orderedAt = LocalDateTime.of(
+                    orderDate,
+                    java.time.LocalTime.parse(ordTmd, timeFormatter)
+            );
+        } else {
+            orderedAt = orderDate.atStartOfDay();
+        }
+
+        // Determine order type: 01=매도(SELL), 02=매수(BUY)
+        String orderType = "02".equals(item.getSllBuyDvsnCd()) ? "BUY" : "SELL";
+
+        // Determine order status based on execution
+        String orderStatus;
+        int totalQty = parseIntSafely(item.getTotCcldQty());
+        int orderQty = parseIntSafely(item.getOrdQty());
+        boolean isCancelled = "Y".equals(item.getCnclYn());
+
+        if (isCancelled) {
+            orderStatus = "CANCELLED";
+        } else if (totalQty == 0) {
+            orderStatus = "PENDING";
+        } else if (totalQty < orderQty) {
+            orderStatus = "PARTIAL";
+        } else {
+            orderStatus = "COMPLETED";
+        }
+
+        return TradeHistoryResponse.builder()
+                .id(item.getOdno())
+                .stockCode(item.getPdno())
+                .stockName(item.getPrdtName())
+                .orderType(orderType)
+                .orderStatus(orderStatus)
+                .quantity(orderQty)
+                .orderPrice(parseBigDecimalSafely(item.getOrdUnpr()))
+                .executedPrice(parseBigDecimalSafely(item.getAvgPrvs()))
+                .executedQuantity(totalQty)
+                .orderedAt(orderedAt)
+                .orderDate(orderDate.format(dateDisplayFormatter))
+                .orderTime(orderedAt.toLocalTime().format(timeDisplayFormatter))
+                .build();
+    }
+
+    /**
+     * Safely parse String to Integer
+     */
+    private int parseIntSafely(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse int: {}", value);
+            return 0;
+        }
+    }
+
+    /**
+     * Safely parse String to BigDecimal
+     */
+    private BigDecimal parseBigDecimalSafely(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(value.trim());
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse BigDecimal: {}", value);
+            return BigDecimal.ZERO;
+        }
     }
 
     private String extractOrderNumber(Map<String, Object> kisResponse) {
