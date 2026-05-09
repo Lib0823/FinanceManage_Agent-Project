@@ -61,14 +61,6 @@ databaseChangeLog:
               - column:
                   name: user_id
 
-        - addForeignKeyConstraint:
-            baseTableName: user_settings
-            baseColumnNames: user_id
-            constraintName: fk_user_settings_user_id
-            referencedTableName: users
-            referencedColumnNames: id
-            onDelete: CASCADE
-
       rollback:
         - dropTable:
             tableName: user_settings
