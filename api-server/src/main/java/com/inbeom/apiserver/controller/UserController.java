@@ -1,8 +1,10 @@
 package com.inbeom.apiserver.controller;
 
 import com.inbeom.apiserver.dto.common.ApiResponse;
-import com.inbeom.apiserver.dto.user.TradeConfigResponse;
-import com.inbeom.apiserver.dto.user.UpdateTradeConfigRequest;
+import com.inbeom.apiserver.dto.user.UpdateUserProfileRequest;
+import com.inbeom.apiserver.dto.user.UpdateUserSettingsRequest;
+import com.inbeom.apiserver.dto.user.UserProfileResponse;
+import com.inbeom.apiserver.dto.user.UserSettingsResponse;
 import com.inbeom.apiserver.service.UserService;
 import com.inbeom.apiserver.util.JwtTokenProvider;
 import jakarta.validation.Valid;
@@ -21,39 +23,76 @@ public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * GET /api/users/trade-config
-     * Get user's trade configuration
+     * GET /api/users/me
+     * Get user profile
      */
-    @GetMapping("/trade-config")
-    public ResponseEntity<ApiResponse<TradeConfigResponse>> getTradeConfig(
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfile(
             @RequestHeader("Authorization") String authHeader
     ) {
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-        TradeConfigResponse config = userService.getTradeConfig(userId);
+        UserProfileResponse profile = userService.getUserProfile(userId);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Trade configuration retrieved successfully", config)
+                ApiResponse.success("User profile retrieved successfully", profile)
         );
     }
 
     /**
-     * PUT /api/users/trade-config
-     * Update user's trade configuration
+     * PUT /api/users/me
+     * Update user profile
      */
-    @PutMapping("/trade-config")
-    public ResponseEntity<ApiResponse<TradeConfigResponse>> updateTradeConfig(
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateUserProfile(
             @RequestHeader("Authorization") String authHeader,
-            @Valid @RequestBody UpdateTradeConfigRequest request
+            @Valid @RequestBody UpdateUserProfileRequest request
     ) {
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-        TradeConfigResponse config = userService.updateTradeConfig(userId, request);
+        UserProfileResponse profile = userService.updateUserProfile(userId, request);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Trade configuration updated successfully", config)
+                ApiResponse.success("User profile updated successfully", profile)
+        );
+    }
+
+    /**
+     * GET /api/users/settings
+     * Get user settings
+     */
+    @GetMapping("/settings")
+    public ResponseEntity<ApiResponse<UserSettingsResponse>> getUserSettings(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        UserSettingsResponse settings = userService.getUserSettings(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("User settings retrieved successfully", settings)
+        );
+    }
+
+    /**
+     * PUT /api/users/settings
+     * Update user settings
+     */
+    @PutMapping("/settings")
+    public ResponseEntity<ApiResponse<UserSettingsResponse>> updateUserSettings(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody UpdateUserSettingsRequest request
+    ) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        UserSettingsResponse settings = userService.updateUserSettings(userId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("User settings updated successfully", settings)
         );
     }
 
