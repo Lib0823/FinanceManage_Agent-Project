@@ -20,8 +20,31 @@ public class KisApiClient {
     @Value("${kis.base-url}")
     private String kisBaseUrl;
 
+    @Value("${kis.mode}")
+    private String kisMode;
+
+    /**
+     * Convert TR_ID based on KIS mode (VIRTUAL/REAL)
+     * - VIRTUAL: VTTC* (모의투자)
+     * - REAL: TTTC* (실전투자)
+     *
+     * @param baseTrId Base TR_ID (e.g., "VTTC8434R")
+     * @return Converted TR_ID based on mode
+     */
+    public String convertTrId(String baseTrId) {
+        if (baseTrId == null || baseTrId.length() < 4) {
+            return baseTrId;
+        }
+
+        String suffix = baseTrId.substring(4); // "8434R" 부분
+        String prefix = "REAL".equalsIgnoreCase(kisMode) ? "TTTC" : "VTTC";
+
+        return prefix + suffix;
+    }
+
     /**
      * Call KIS API with authentication headers
+     * TR_ID는 kis.mode 설정에 따라 자동 변환됩니다 (VTTC ↔ TTTC)
      */
     public <T> ResponseEntity<T> callKisApi(
             String endpoint,
@@ -35,12 +58,16 @@ public class KisApiClient {
     ) {
         String url = kisBaseUrl + endpoint;
 
+        // TR_ID 자동 변환 (VIRTUAL → VTTC*, REAL → TTTC*)
+        String convertedTrId = convertTrId(trId);
+        log.debug("TR_ID conversion: {} → {} (mode: {})", trId, convertedTrId, kisMode);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("authorization", "Bearer " + kisToken);
         headers.set("appkey", appKey);
         headers.set("appsecret", appSecret);
-        headers.set("tr_id", trId);
+        headers.set("tr_id", convertedTrId);  // 변환된 TR_ID 사용
         headers.set("custtype", "P");
 
         HttpEntity<?> request = new HttpEntity<>(requestBody, headers);
