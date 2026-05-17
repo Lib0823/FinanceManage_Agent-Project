@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7070/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -33,6 +33,13 @@ api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const originalRequest = error.config
+
+    // 로그인/회원가입 요청은 인터셉터 처리 제외 (401을 그대로 반환)
+    if (originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/register') ||
+        originalRequest.url?.includes('/auth/reset-password')) {
+      return Promise.reject(error)
+    }
 
     // 401 에러이고, 아직 재시도하지 않은 요청인 경우
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -96,7 +103,8 @@ export const authApi = {
   checkUsername: (username) => api.get('/auth/check-username', { params: { username } }),
   checkEmail: (email) => api.get('/auth/check-email', { params: { email } }),
   refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
-  logout: (refreshToken) => api.post('/auth/logout', { refreshToken })
+  logout: (refreshToken) => api.post('/auth/logout', { refreshToken }),
+  validateKisAccount: (kisData) => api.post('/auth/validate-kis-account', kisData)
 }
 
 // User API
@@ -105,7 +113,9 @@ export const userApi = {
   updateProfile: (data) => api.put('/users/me', data),
   getSettings: () => api.get('/users/settings'),
   updateSettings: (data) => api.put('/users/settings', data),
-  deleteAccount: () => api.delete('/users/me')
+  deleteAccount: () => api.delete('/users/me'),
+  getKisAccount: () => api.get('/users/kis-account'),
+  updateKisAccount: (data) => api.put('/users/kis-account', data)
 }
 
 // Asset API

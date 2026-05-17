@@ -27,7 +27,12 @@ onMounted(() => {
   }
 })
 
-const handleLogin = async () => {
+const handleLogin = async (event) => {
+  // 기본 폼 제출 방지
+  if (event) {
+    event.preventDefault()
+  }
+
   if (!form.value.username || !form.value.password) {
     errorMessage.value = '아이디와 비밀번호를 입력해주세요'
     return
@@ -48,6 +53,9 @@ const handleLogin = async () => {
     localStorage.setItem('uiSettings', JSON.stringify(uiSettings))
 
     // Use auth store to manage authentication state
+    // api.js interceptor가 response.data를 반환하므로
+    // response = { success, message, data: { accessToken, refreshToken, user } }
+    console.log('[Login] Response:', response)
     authStore.setAuthData({
       accessToken: response.data.accessToken,
       refreshToken: response.data.refreshToken,
@@ -58,7 +66,16 @@ const handleLogin = async () => {
     router.push('/home')
   } catch (error) {
     console.error('Login failed:', error)
-    errorMessage.value = error.response?.data?.message || '로그인에 실패했습니다'
+
+    // 로그인 화면에서는 401 에러를 정상적으로 처리 (인터셉터 우회)
+    if (error.response?.status === 401) {
+      errorMessage.value = '아이디 또는 비밀번호가 일치하지 않습니다'
+    } else if (error.response?.data?.message) {
+      errorMessage.value = error.response.data.message
+    } else {
+      errorMessage.value = '로그인에 실패했습니다'
+    }
+    // 입력값 유지 (form.value는 그대로 둠)
   } finally {
     loading.value = false
   }
@@ -82,7 +99,7 @@ const goToResetPassword = () => {
       </div>
 
       <!-- Form -->
-      <div class="form">
+      <form class="form" @submit.prevent="handleLogin">
         <div class="form-group">
           <label class="label">ID</label>
           <input
@@ -91,6 +108,7 @@ const goToResetPassword = () => {
             class="input"
             placeholder="Input ID"
             :disabled="loading"
+            autocomplete="username"
           />
         </div>
 
@@ -102,7 +120,8 @@ const goToResetPassword = () => {
             class="input"
             placeholder="Input Password"
             :disabled="loading"
-            @keyup.enter="handleLogin"
+            autocomplete="current-password"
+            @keydown.enter.prevent="handleLogin"
           />
         </div>
 
@@ -110,7 +129,7 @@ const goToResetPassword = () => {
           {{ errorMessage }}
         </div>
 
-        <button class="btn btn-login" @click="handleLogin" :disabled="loading">
+        <button type="submit" class="btn btn-login" :disabled="loading">
           {{ loading ? '로그인 중...' : '로그인' }}
         </button>
 
@@ -121,11 +140,11 @@ const goToResetPassword = () => {
             <span class="checkbox-label">자동 로그인</span>
           </label>
 
-          <button class="link-btn" @click="goToResetPassword">
+          <button type="button" class="link-btn" @click="goToResetPassword">
             비밀번호 재설정
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </template>
@@ -224,12 +243,12 @@ const goToResetPassword = () => {
 }
 
 .error-message {
-  padding: var(--spacing-md);
-  background: var(--color-error);
-  color: white;
-  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) 0;
+  color: #DC2626;
   font-size: var(--font-size-sm);
-  text-align: center;
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  margin-top: calc(var(--spacing-xl) * -0.5);
 }
 
 .btn-login {

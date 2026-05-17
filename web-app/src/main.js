@@ -29,6 +29,7 @@ import {
   List,
   DatePicker,
   Picker,
+  Calendar,
   Locale,
   Swipe,
   SwipeItem
@@ -96,6 +97,7 @@ app.use(PullRefresh)
 app.use(List)
 app.use(DatePicker)
 app.use(Picker)
+app.use(Calendar)
 app.use(Swipe)
 app.use(SwipeItem)
 

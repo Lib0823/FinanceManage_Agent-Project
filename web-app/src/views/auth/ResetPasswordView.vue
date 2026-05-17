@@ -13,25 +13,7 @@ const form = ref({
   passwordConfirm: ''
 })
 
-const isPhoneVerified = ref(false)
 const isResetting = ref(false)
-
-const handleSendAuthCode = () => {
-  // 임시 우회: 휴대폰 인증 없이 진행
-  if (!form.value.phone) {
-    Toast.fail('핸드폰 번호를 입력해주세요')
-    return
-  }
-
-  Toast.success('개발 중 - 인증번호 자동 발송 완료')
-  isPhoneVerified.value = true
-}
-
-const handleVerifyCode = () => {
-  // 임시 우회: 인증 자동 완료
-  Toast.success('개발 중 - 인증 완료')
-  isPhoneVerified.value = true
-}
 
 const handleReset = async () => {
   // 유효성 검사
@@ -42,11 +24,6 @@ const handleReset = async () => {
 
   if (!form.value.phone) {
     Toast.fail('핸드폰 번호를 입력해주세요')
-    return
-  }
-
-  if (!isPhoneVerified.value) {
-    Toast.fail('휴대폰 인증을 완료해주세요')
     return
   }
 
@@ -68,9 +45,12 @@ const handleReset = async () => {
   try {
     isResetting.value = true
 
+    // 전화번호에서 하이픈 제거 (백엔드는 숫자만 받음)
+    const phoneNumber = form.value.phone.replace(/[^0-9]/g, '')
+
     await authApi.resetPassword({
       username: form.value.username,
-      phone: form.value.phone,
+      phone: phoneNumber,
       newPassword: form.value.newPassword,
       passwordConfirm: form.value.passwordConfirm
     })
@@ -149,28 +129,17 @@ const handleReset = async () => {
           </div>
         </div>
 
-        <!-- Verification -->
-        <div class="verification-section">
-          <h3 class="section-title">본인 인증</h3>
-
+        <!-- Phone -->
+        <h3 class="card-title">휴대폰 번호</h3>
+        <div class="info-card">
           <div class="form-group">
             <label class="label">휴대폰 번호</label>
-            <div class="input-with-btn">
-              <input
-                v-model="form.phone"
-                type="tel"
-                class="input"
-                placeholder="010-1234-5678"
-              />
-              <button class="inline-btn orange" @click="handleSendAuthCode">인증 번호 전송</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="label">인증 번호 (개발 중 - 자동 인증)</label>
-            <button class="inline-btn" @click="handleVerifyCode" style="width: 100%;">
-              인증 완료
-            </button>
+            <input
+              v-model="form.phone"
+              type="tel"
+              class="input"
+              placeholder="010-1234-5678"
+            />
           </div>
         </div>
 

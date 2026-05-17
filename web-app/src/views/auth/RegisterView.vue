@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/services/api'
@@ -15,7 +15,6 @@ const form = ref({
   email: '',
   name: '',
   phone: '',
-  authCode: '',
   birth: ['1990', '01', '01']
 })
 
@@ -26,7 +25,79 @@ const isCheckingId = ref(false)
 const isEmailChecked = ref(false)
 const isEmailAvailable = ref(false)
 const isCheckingEmail = ref(false)
-const isPhoneVerified = ref(false)
+
+// 컴포넌트 마운트 시 기존 데이터 복원
+onMounted(() => {
+  if (authStore.hasStep1Data()) {
+    const step1Data = authStore.registrationData.step1
+    const validation = authStore.registrationData.validation
+
+    form.value.id = step1Data.id || ''
+    form.value.password = step1Data.password || ''
+    form.value.passwordConfirm = step1Data.passwordConfirm || ''
+    form.value.email = step1Data.email || ''
+    form.value.name = step1Data.name || ''
+    form.value.phone = step1Data.phone || ''
+
+    // birthDate를 birth 배열로 변환
+    if (step1Data.birthDate) {
+      const [year, month, day] = step1Data.birthDate.split('-')
+      form.value.birth = [year, month, day]
+    }
+
+    // 중복 확인 상태 복원
+    if (step1Data.id && validation.isIdChecked) {
+      isIdChecked.value = true
+      isIdAvailable.value = validation.isIdAvailable
+    }
+
+    if (step1Data.email && validation.isEmailChecked) {
+      isEmailChecked.value = true
+      isEmailAvailable.value = validation.isEmailAvailable
+    }
+  }
+})
+
+// 비밀번호 검증 상태
+const passwordValidation = computed(() => {
+  const password = form.value.password
+  if (!password) return { valid: false, message: '' }
+
+  if (password.length < 8) {
+    return { valid: false, message: '비밀번호는 8자 이상이어야 합니다' }
+  }
+
+  return { valid: true, message: '사용 가능한 비밀번호입니다' }
+})
+
+const passwordMatchValidation = computed(() => {
+  const password = form.value.password
+  const passwordConfirm = form.value.passwordConfirm
+
+  if (!passwordConfirm) return { valid: false, message: '' }
+
+  if (password !== passwordConfirm) {
+    return { valid: false, message: '비밀번호가 일치하지 않습니다' }
+  }
+
+  return { valid: true, message: '비밀번호가 일치합니다' }
+})
+
+// 다음 버튼 활성화 여부
+const isFormValid = computed(() => {
+  // 필수: 아이디, 비밀번호, 비밀번호 확인, 이름, 핸드폰
+  return (
+    form.value.id &&
+    isIdChecked.value &&
+    isIdAvailable.value &&
+    passwordValidation.value.valid &&
+    passwordMatchValidation.value.valid &&
+    form.value.name &&
+    form.value.phone &&
+    // 이메일은 선택이지만 입력했다면 중복확인 필수
+    (form.value.email ? (isEmailChecked.value && isEmailAvailable.value) : true)
+  )
+})
 
 const formattedBirth = computed(() => {
   const [year, month, day] = form.value.birth
@@ -99,25 +170,6 @@ const handleCheckEmail = async () => {
   }
 }
 
-const handleSendAuthCode = () => {
-  // 임시 우회: 휴대폰 인증 없이 진행
-  if (!form.value.phone) {
-    Toast.fail('핸드폰 번호를 입력해주세요')
-    return
-  }
-
-  Toast.success('개발 중 - 인증번호 자동 발송 완료')
-  isPhoneVerified.value = true
-  authStore.setPhoneVerified(true)
-}
-
-const handleVerifyCode = () => {
-  // 임시 우회: 인증 자동 완료
-  Toast.success('개발 중 - 인증 완료')
-  isPhoneVerified.value = true
-  authStore.setPhoneVerified(true)
-}
-
 const handleNext = () => {
   // 유효성 검사
   if (!form.value.id) {
@@ -161,22 +213,20 @@ const handleNext = () => {
     return
   }
 
-  if (!isPhoneVerified.value) {
-    Toast.fail('휴대폰 인증을 완료해주세요')
-    return
-  }
-
   // Pinia store에 데이터 저장
   const [year, month, day] = form.value.birth
   const birthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+
+  // 전화번호에서 하이픈 제거 (백엔드는 숫자만 받음)
+  const phoneNumber = form.value.phone.replace(/[^0-9]/g, '')
 
   authStore.saveStep1Data({
     id: form.value.id,
     password: form.value.password,
     passwordConfirm: form.value.passwordConfirm,
-    email: form.value.email,
+    email: form.value.email || null,
     name: form.value.name,
-    phone: form.value.phone,
+    phone: phoneNumber,
     birthDate: birthDate
   })
 
@@ -203,57 +253,89 @@ const handleNext = () => {
       <div class="form">
         <!-- ID -->
         <div class="form-group">
-          <label class="label">아이디</label>
+          <label class="label"><span class="required">*</span> 아이디</label>
           <div class="input-with-btn">
             <input
               v-model="form.id"
               type="text"
               class="input"
+              :class="{ 'input-success': isIdChecked && isIdAvailable, 'input-error': isIdChecked && !isIdAvailable }"
               placeholder="ID"
+              @input="isIdChecked = false"
             />
-            <button class="inline-btn" @click="handleCheckDuplicate">중복 확인</button>
+            <button class="inline-btn" @click="handleCheckDuplicate" :disabled="isCheckingId">
+              {{ isCheckingId ? '확인 중...' : '중복 확인' }}
+            </button>
           </div>
+          <span v-if="isIdChecked && isIdAvailable" class="validation-message success">✓ 사용 가능한 아이디입니다</span>
+          <span v-if="isIdChecked && !isIdAvailable" class="validation-message error">✗ 이미 사용 중인 아이디입니다</span>
         </div>
 
         <!-- Password -->
         <div class="form-group">
-          <label class="label">비밀번호</label>
+          <label class="label"><span class="required">*</span> 비밀번호</label>
           <input
             v-model="form.password"
             type="password"
             class="input"
-            placeholder="Password"
+            :class="{
+              'input-success': form.password && passwordValidation.valid,
+              'input-error': form.password && !passwordValidation.valid
+            }"
+            placeholder="Password (8자 이상)"
           />
+          <span v-if="form.password && passwordValidation.valid" class="validation-message success">
+            ✓ {{ passwordValidation.message }}
+          </span>
+          <span v-if="form.password && !passwordValidation.valid" class="validation-message error">
+            ✗ {{ passwordValidation.message }}
+          </span>
         </div>
 
         <!-- Password Confirm -->
         <div class="form-group">
-          <label class="label">비밀번호 확인</label>
+          <label class="label"><span class="required">*</span> 비밀번호 확인</label>
           <input
             v-model="form.passwordConfirm"
             type="password"
             class="input"
+            :class="{
+              'input-success': form.passwordConfirm && passwordMatchValidation.valid,
+              'input-error': form.passwordConfirm && !passwordMatchValidation.valid
+            }"
             placeholder="Password Check"
           />
+          <span v-if="form.passwordConfirm && passwordMatchValidation.valid" class="validation-message success">
+            ✓ {{ passwordMatchValidation.message }}
+          </span>
+          <span v-if="form.passwordConfirm && !passwordMatchValidation.valid" class="validation-message error">
+            ✗ {{ passwordMatchValidation.message }}
+          </span>
         </div>
 
-        <!-- Email (optional) -->
+        <!-- Email -->
         <div class="form-group">
-          <label class="label">이메일 (선택)</label>
+          <label class="label">이메일</label>
           <div class="input-with-btn">
             <input
               v-model="form.email"
               type="email"
               class="input"
-              placeholder="Email (optional)"
+              :class="{ 'input-success': isEmailChecked && isEmailAvailable, 'input-error': isEmailChecked && !isEmailAvailable }"
+              placeholder="Email"
+              @input="isEmailChecked = false"
             />
-            <button class="inline-btn" @click="handleCheckEmail">중복 확인</button>
+            <button class="inline-btn" @click="handleCheckEmail" :disabled="isCheckingEmail">
+              {{ isCheckingEmail ? '확인 중...' : '중복 확인' }}
+            </button>
           </div>
+          <span v-if="isEmailChecked && isEmailAvailable" class="validation-message success">✓ 사용 가능한 이메일입니다</span>
+          <span v-if="isEmailChecked && !isEmailAvailable" class="validation-message error">✗ 이미 사용 중인 이메일입니다</span>
         </div>
 
         <!-- Name -->
         <div class="form-group">
-          <label class="label">이름</label>
+          <label class="label"><span class="required">*</span> 이름</label>
           <input
             v-model="form.name"
             type="text"
@@ -264,30 +346,13 @@ const handleNext = () => {
 
         <!-- Phone -->
         <div class="form-group">
-          <label class="label">핸드폰</label>
-          <div class="input-with-btn">
-            <input
-              v-model="form.phone"
-              type="tel"
-              class="input"
-              placeholder="Phone Number"
-            />
-            <button class="inline-btn orange" @click="handleSendAuthCode">인증 번호 전송</button>
-          </div>
-        </div>
-
-        <!-- Auth Code -->
-        <div class="form-group">
-          <label class="label">인증번호</label>
-          <div class="input-with-btn">
-            <input
-              v-model="form.authCode"
-              type="text"
-              class="input"
-              placeholder="Auth Number"
-            />
-            <button class="inline-btn" @click="handleVerifyCode">인증</button>
-          </div>
+          <label class="label"><span class="required">*</span> 핸드폰</label>
+          <input
+            v-model="form.phone"
+            type="tel"
+            class="input"
+            placeholder="010-1234-5678"
+          />
         </div>
 
         <!-- Birth Date -->
@@ -312,9 +377,15 @@ const handleNext = () => {
         </van-popup>
 
         <!-- Next Button -->
-        <button class="btn btn-next" @click="handleNext">
+        <button
+          class="btn btn-next"
+          :class="{ 'btn-disabled': !isFormValid }"
+          :disabled="!isFormValid"
+          @click="handleNext"
+        >
           다음
         </button>
+
       </div>
     </div>
   </div>
@@ -403,6 +474,11 @@ const handleNext = () => {
   color: var(--color-text-primary);
 }
 
+.required {
+  color: #EF4444;
+  margin-right: 2px;
+}
+
 .input {
   flex: 1;
   padding: var(--spacing-md) 0;
@@ -487,5 +563,74 @@ const handleNext = () => {
 
 .btn-next:hover {
   background: var(--color-primary-dark);
+}
+
+.validation-message {
+  font-size: var(--font-size-xs);
+  margin-top: 4px;
+  display: block;
+}
+
+.validation-message.success {
+  color: #10B981;
+}
+
+.validation-message.error {
+  color: #EF4444;
+}
+
+.input-success {
+  border-bottom-color: #10B981 !important;
+}
+
+.input-error {
+  border-bottom-color: #EF4444 !important;
+}
+
+.inline-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-bg-tertiary) !important;
+  color: var(--color-text-tertiary) !important;
+}
+
+.form-requirements {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-highlight);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+.requirements-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.requirements-list li {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) 0;
+}
+
+.requirements-list li.completed {
+  color: #10B981;
+  font-weight: var(--font-weight-medium);
 }
 </style>
