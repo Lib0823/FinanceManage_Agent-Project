@@ -1,6 +1,8 @@
 package com.inbeom.apiserver.controller;
 
 import com.inbeom.apiserver.dto.common.ApiResponse;
+import com.inbeom.apiserver.dto.user.KisAccountResponse;
+import com.inbeom.apiserver.dto.user.UpdateKisAccountRequest;
 import com.inbeom.apiserver.dto.user.UpdateUserProfileRequest;
 import com.inbeom.apiserver.dto.user.UpdateUserSettingsRequest;
 import com.inbeom.apiserver.dto.user.UserProfileResponse;
@@ -31,7 +33,7 @@ public class UserController {
             @RequestHeader("Authorization") String authHeader
     ) {
         String token = authHeader.substring(7);
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
         UserProfileResponse profile = userService.getUserProfile(userId);
 
@@ -112,6 +114,43 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Account deleted successfully", null)
+        );
+    }
+
+    /**
+     * GET /api/users/kis-account
+     * Get user KIS account information
+     */
+    @GetMapping("/kis-account")
+    public ResponseEntity<ApiResponse<KisAccountResponse>> getKisAccount(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        KisAccountResponse kisAccount = userService.getKisAccount(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("KIS account retrieved successfully", kisAccount)
+        );
+    }
+
+    /**
+     * PUT /api/users/kis-account
+     * Update user KIS account information
+     */
+    @PutMapping("/kis-account")
+    public ResponseEntity<ApiResponse<KisAccountResponse>> updateKisAccount(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody UpdateKisAccountRequest request
+    ) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+        KisAccountResponse kisAccount = userService.updateKisAccount(userId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("KIS account updated successfully", kisAccount)
         );
     }
 }

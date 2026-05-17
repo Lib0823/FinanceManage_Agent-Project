@@ -60,4 +60,11 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ApiResponse.success("Logout successful", null);
     }
+
+    @PostMapping("/validate-kis-account")
+    public ApiResponse<ValidateKisAccountResponse> validateKisAccount(@Valid @RequestBody ValidateKisAccountRequest request) {
+        ValidateKisAccountResponse response = authService.validateKisAccount(request);
+        String message = response.isValid() ? "KIS account validation successful" : "KIS account validation failed";
+        return ApiResponse.success(message, response);
+    }
 }

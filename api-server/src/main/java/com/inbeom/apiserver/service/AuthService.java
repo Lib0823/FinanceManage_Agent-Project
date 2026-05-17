@@ -5,6 +5,8 @@ import com.inbeom.apiserver.domain.User;
 import com.inbeom.apiserver.domain.UserKisAccount;
 import com.inbeom.apiserver.domain.UserTradeConfig;
 import com.inbeom.apiserver.dto.auth.*;
+import com.inbeom.apiserver.dto.kis.KisTokenRequest;
+import com.inbeom.apiserver.dto.kis.KisTokenResponse;
 import com.inbeom.apiserver.exception.*;
 import com.inbeom.apiserver.repository.RefreshTokenRepository;
 import com.inbeom.apiserver.repository.UserKisAccountRepository;
@@ -12,13 +14,19 @@ import com.inbeom.apiserver.repository.UserRepository;
 import com.inbeom.apiserver.repository.UserTradeConfigRepository;
 import com.inbeom.apiserver.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -29,6 +37,10 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${kis.base-url}")
+    private String kisBaseUrl;
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
@@ -205,6 +217,61 @@ public class AuthService {
 
         refreshToken.revoke();
         refreshTokenRepository.save(refreshToken);
+    }
+
+    /**
+     * KIS 계정 검증 (AppKey, AppSecret으로 OAuth 토큰 발급 시도)
+     */
+    public ValidateKisAccountResponse validateKisAccount(ValidateKisAccountRequest request) {
+        String url = kisBaseUrl + "/oauth2/tokenP";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        KisTokenRequest body = KisTokenRequest.builder()
+                .grantType("client_credentials")
+                .appKey(request.getAppKey())
+                .appSecret(request.getAppSecret())
+                .build();
+
+        HttpEntity<KisTokenRequest> httpRequest = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<KisTokenResponse> response = restTemplate.postForEntity(url, httpRequest, KisTokenResponse.class);
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                log.info("KIS account validation successful");
+                return ValidateKisAccountResponse.success();
+            } else {
+                log.warn("KIS account validation failed with status: {}", response.getStatusCode());
+                return ValidateKisAccountResponse.failure(
+                        "KIS 인증에 실패했습니다",
+                        "INVALID_RESPONSE"
+                );
+            }
+        } catch (HttpClientErrorException e) {
+            // 4xx: Invalid credentials
+            log.error("KIS account validation failed (4xx): status={}, body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+
+            String message = "KIS APP Key 또는 APP Secret이 올바르지 않습니다";
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                message = "KIS 인증 정보가 유효하지 않습니다";
+            } else if (e.getStatusCode() == HttpStatus.BAD_REQUEST) {
+                message = "KIS 요청 형식이 올바르지 않습니다";
+            } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                message = "KIS API 서버 오류입니다. 잠시 후 다시 시도해주세요";
+            }
+
+            return ValidateKisAccountResponse.failure(message, "INVALID_CREDENTIALS");
+        } catch (Exception e) {
+            // Network or other errors
+            log.error("KIS account validation error", e);
+            return ValidateKisAccountResponse.failure(
+                    "KIS 서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요",
+                    "CONNECTION_ERROR"
+            );
+        }
     }
 
     private void saveRefreshToken(User user, String token) {

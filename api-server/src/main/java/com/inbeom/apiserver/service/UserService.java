@@ -3,9 +3,12 @@ package com.inbeom.apiserver.service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.inbeom.apiserver.domain.User;
+import com.inbeom.apiserver.domain.UserKisAccount;
 import com.inbeom.apiserver.domain.UserSettings;
 import com.inbeom.apiserver.domain.UserTradeConfig;
+import com.inbeom.apiserver.dto.user.KisAccountResponse;
 import com.inbeom.apiserver.dto.user.TradeConfigResponse;
+import com.inbeom.apiserver.dto.user.UpdateKisAccountRequest;
 import com.inbeom.apiserver.dto.user.UpdateTradeConfigRequest;
 import com.inbeom.apiserver.dto.user.UpdateUserProfileRequest;
 import com.inbeom.apiserver.dto.user.UpdateUserSettingsRequest;
@@ -267,5 +270,70 @@ public class UserService {
         // 6. Finally delete user
         userRepository.delete(user);
         log.info("Successfully deleted account for user: {}", userId);
+    }
+
+    /**
+     * Get user KIS account
+     */
+    @Transactional(readOnly = true)
+    public KisAccountResponse getKisAccount(Long userId) {
+        UserKisAccount kisAccount = kisAccountRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.ENTITY_NOT_FOUND,
+                        "KIS 계좌 정보를 찾을 수 없습니다"
+                ));
+
+        return KisAccountResponse.builder()
+                .id(kisAccount.getId())
+                .accountNumber(kisAccount.getAccountNumber())
+                .accountProductCode(kisAccount.getAccountProductCode())
+                .appKey(kisAccount.getAppKey())
+                .appSecret(kisAccount.getAppSecret())
+                .isVerified(kisAccount.getIsVerified())
+                .createdAt(kisAccount.getCreatedAt())
+                .updatedAt(kisAccount.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Update user KIS account
+     */
+    @Transactional
+    public KisAccountResponse updateKisAccount(Long userId, UpdateKisAccountRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        UserKisAccount kisAccount = kisAccountRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.ENTITY_NOT_FOUND,
+                        "KIS 계좌 정보를 찾을 수 없습니다"
+                ));
+
+        // Check if account number is changed and already exists
+        if (!kisAccount.getAccountNumber().equals(request.getAccountNumber())) {
+            if (kisAccountRepository.findByAccountNumber(request.getAccountNumber()).isPresent()) {
+                throw new BusinessException(ErrorCode.KIS_ACCOUNT_DUPLICATE, "이미 등록된 계좌번호입니다");
+            }
+        }
+
+        // Update KIS account
+        kisAccount.setAccountNumber(request.getAccountNumber());
+        kisAccount.setAppKey(request.getAppKey());
+        kisAccount.setAppSecret(request.getAppSecret());
+        // Reset verification status when credentials are changed
+        kisAccount.setIsVerified(false);
+
+        kisAccount = kisAccountRepository.save(kisAccount);
+
+        return KisAccountResponse.builder()
+                .id(kisAccount.getId())
+                .accountNumber(kisAccount.getAccountNumber())
+                .accountProductCode(kisAccount.getAccountProductCode())
+                .appKey(kisAccount.getAppKey())
+                .appSecret(kisAccount.getAppSecret())
+                .isVerified(kisAccount.getIsVerified())
+                .createdAt(kisAccount.getCreatedAt())
+                .updatedAt(kisAccount.getUpdatedAt())
+                .build();
     }
 }
