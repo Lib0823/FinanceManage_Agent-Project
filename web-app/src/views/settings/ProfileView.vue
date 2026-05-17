@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Toast } from 'vant'
 import AppHeader from '@/components/common/AppHeader.vue'
-import { userApi } from '@/services/api'
+import { userApi, authApi } from '@/services/api'
+import toast from '@/utils/toast'
 
 const router = useRouter()
 
@@ -16,15 +16,26 @@ const user = ref({
   birthDate: null
 })
 
+const kisAccount = ref({
+  accountNumber: '',
+  appKey: '',
+  appSecret: ''
+})
+
 const showBirthCalendar = ref(false)
 const loading = ref(false)
+const isValidating = ref(false)
+const validationResult = ref(null)
 
 // Load user profile
 const loadProfile = async () => {
   try {
     loading.value = true
     const response = await userApi.getProfile()
-    if (response.data) {
+
+    // api.js interceptor가 response.data를 반환하므로
+    // response 자체가 { success, message, data } 구조입니다
+    if (response && response.data) {
       user.value = {
         id: response.data.id,
         username: response.data.username,
@@ -36,9 +47,31 @@ const loadProfile = async () => {
     }
   } catch (error) {
     console.error('Failed to load profile:', error)
-    Toast.fail('프로필 정보를 불러오지 못했습니다')
+    toast.error('프로필 정보를 불러올 수 없습니다')
   } finally {
     loading.value = false
+  }
+}
+
+// Load KIS account
+const loadKisAccount = async () => {
+  try {
+    const response = await userApi.getKisAccount()
+
+    if (response && response.data) {
+      kisAccount.value = {
+        accountNumber: response.data.accountNumber || '',
+        appKey: response.data.appKey || '',
+        appSecret: response.data.appSecret || ''
+      }
+      validationResult.value = response.data.isVerified ? { valid: true } : null
+    }
+  } catch (error) {
+    console.error('Failed to load KIS account:', error)
+    // KIS 계좌가 없는 경우는 에러로 처리하지 않음
+    if (error.response?.status !== 404) {
+      toast.error('KIS 계좌 정보를 불러올 수 없습니다')
+    }
   }
 }
 
@@ -55,18 +88,52 @@ const handleLogout = () => {
   router.push('/welcome')
 }
 
+const handleValidateKis = async () => {
+  // 입력값 검증
+  if (!kisAccount.value.accountNumber || !kisAccount.value.appKey || !kisAccount.value.appSecret) {
+    toast.warning('KIS 계좌 정보를 모두 입력해주세요')
+    return
+  }
+
+  try {
+    isValidating.value = true
+    validationResult.value = null
+
+    const response = await authApi.validateKisAccount({
+      accountNumber: kisAccount.value.accountNumber,
+      appKey: kisAccount.value.appKey,
+      appSecret: kisAccount.value.appSecret
+    })
+
+    validationResult.value = response.data
+  } catch (error) {
+    console.error('KIS validation error:', error)
+
+    // 에러 메시지 처리
+    if (error.response?.data?.data?.message) {
+      validationResult.value = error.response.data.data
+    } else if (error.response?.data?.message) {
+      validationResult.value = { valid: false, message: error.response.data.message }
+    } else {
+      validationResult.value = { valid: false, message: 'KIS 계정 검증 중 오류 발생' }
+    }
+  } finally {
+    isValidating.value = false
+  }
+}
+
 const handleSave = async () => {
   try {
     // Validate required fields
     if (!user.value.name || !user.value.email) {
-      Toast.fail('이름과 이메일은 필수입니다')
+      toast.warning('이름과 이메일은 필수입니다')
       return
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(user.value.email)) {
-      Toast.fail('올바른 이메일 형식이 아닙니다')
+      toast.warning('올바른 이메일 형식을 입력해주세요')
       return
     }
 
@@ -74,13 +141,27 @@ const handleSave = async () => {
     if (user.value.phone) {
       const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/
       if (!phoneRegex.test(user.value.phone)) {
-        Toast.fail('올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)')
+        toast.warning('올바른 전화번호 형식을 입력해주세요')
+        return
+      }
+    }
+
+    // Validate KIS account if provided
+    if (kisAccount.value.accountNumber || kisAccount.value.appKey || kisAccount.value.appSecret) {
+      if (!kisAccount.value.accountNumber || !kisAccount.value.appKey || !kisAccount.value.appSecret) {
+        toast.warning('KIS 계좌 정보를 모두 입력하거나 모두 비워주세요')
+        return
+      }
+
+      if (!validationResult.value || !validationResult.value.valid) {
+        toast.error('KIS 계정 인증을 먼저 완료해주세요')
         return
       }
     }
 
     loading.value = true
 
+    // Save user profile
     await userApi.updateProfile({
       name: user.value.name,
       email: user.value.email,
@@ -88,13 +169,22 @@ const handleSave = async () => {
       birthDate: user.value.birthDate || null
     })
 
-    Toast.success('프로필이 저장되었습니다')
+    // Save KIS account if provided
+    if (kisAccount.value.accountNumber && kisAccount.value.appKey && kisAccount.value.appSecret) {
+      await userApi.updateKisAccount({
+        accountNumber: kisAccount.value.accountNumber,
+        appKey: kisAccount.value.appKey,
+        appSecret: kisAccount.value.appSecret
+      })
+    }
+
+    toast.success('정보가 저장되었습니다')
   } catch (error) {
-    console.error('Failed to save profile:', error)
+    console.error('Failed to save:', error)
     if (error.response?.data?.message) {
-      Toast.fail(error.response.data.message)
+      toast.error(error.response.data.message)
     } else {
-      Toast.fail('프로필 저장에 실패했습니다')
+      toast.error('저장에 실패했습니다')
     }
   } finally {
     loading.value = false
@@ -106,7 +196,11 @@ const openBirthPicker = () => {
 }
 
 const confirmBirth = (value) => {
-  user.value.birthDate = value
+  // Convert Date to YYYY-MM-DD format
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  user.value.birthDate = `${year}-${month}-${day}`
   showBirthCalendar.value = false
 }
 
@@ -123,8 +217,15 @@ const formatBirthDate = (date) => {
   return `${year}.${month}.${day}`
 }
 
-onMounted(() => {
-  loadProfile()
+onMounted(async () => {
+  const token = localStorage.getItem('accessToken')
+  if (!token) {
+    toast.warning('로그인이 필요합니다')
+    return
+  }
+
+  await loadProfile()
+  await loadKisAccount()
 })
 </script>
 
@@ -218,6 +319,60 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- KIS Account Card -->
+      <section class="info-card">
+        <h3 class="card-title">KIS 계좌 정보</h3>
+
+        <div class="info-row">
+          <span class="info-label">계좌번호</span>
+          <input
+            type="text"
+            class="info-input"
+            v-model="kisAccount.accountNumber"
+            placeholder="계좌번호 입력"
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">APP Key</span>
+          <input
+            type="text"
+            class="info-input"
+            v-model="kisAccount.appKey"
+            placeholder="APP Key 입력"
+            :disabled="loading"
+          />
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">APP Secret</span>
+          <input
+            type="password"
+            class="info-input"
+            v-model="kisAccount.appSecret"
+            placeholder="APP Secret 입력"
+            :disabled="loading"
+          />
+        </div>
+
+        <button
+          class="btn-validate"
+          :class="{ 'btn-validate-success': validationResult?.valid, 'btn-validate-error': validationResult && !validationResult.valid }"
+          @click="handleValidateKis"
+          :disabled="isValidating"
+        >
+          {{ isValidating ? '검증 중...' : validationResult?.valid ? '✓ 인증 성공' : validationResult ? '✗ 인증 실패 - 다시 시도' : 'KIS 계정 인증' }}
+        </button>
+
+        <p v-if="validationResult && !validationResult.valid" class="validation-error-message">
+          {{ validationResult.message }}
+        </p>
+        <p v-if="!validationResult && (kisAccount.accountNumber || kisAccount.appKey || kisAccount.appSecret)" class="validation-info-message">
+          저장 전에 KIS 계정 인증을 완료해주세요
+        </p>
+      </section>
+
       <!-- Save Button -->
       <button class="btn btn-save" @click="handleSave" :disabled="loading">
         {{ loading ? '저장 중...' : '저장' }}
@@ -234,7 +389,6 @@ onMounted(() => {
       :max-date="new Date()"
       :default-date="user.birthDate ? new Date(user.birthDate) : new Date()"
       color="#F59E0B"
-      :show-confirm="false"
       @confirm="confirmBirth"
       @close="closeBirthPicker"
       :style="{ zIndex: 10000 }"
@@ -563,5 +717,53 @@ onMounted(() => {
 :deep(.van-calendar__bottom-info) {
   color: var(--color-primary);
   font-size: var(--font-size-xs);
+}
+
+/* KIS Account Validation Button */
+.btn-validate {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  margin-top: var(--spacing-md);
+  transition: all 0.2s ease;
+}
+
+.btn-validate:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-validate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-validate-success {
+  background: #10B981;
+  color: white;
+}
+
+.btn-validate-error {
+  background: #EF4444;
+  color: white;
+}
+
+.validation-error-message {
+  font-size: var(--font-size-xs);
+  color: #EF4444;
+  margin-top: var(--spacing-xs);
+  text-align: center;
+}
+
+.validation-info-message {
+  font-size: var(--font-size-xs);
+  color: #F97316;
+  margin-top: var(--spacing-xs);
+  text-align: center;
 }
 </style>

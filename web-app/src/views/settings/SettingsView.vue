@@ -1,14 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { Toast } from 'vant'
 import AppHeader from '@/components/common/AppHeader.vue'
 import { mockSettings } from '@/services/mockData'
 import { userApi } from '@/services/api'
+import toast from '@/utils/toast'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 const settings = ref(mockSettings)
 const loading = ref(false)
@@ -59,6 +57,7 @@ const loadSettings = async () => {
   } catch (error) {
     console.error('Failed to load settings:', error)
     errorMessage.value = '설정을 불러오는데 실패했습니다'
+    toast.error('설정을 불러올 수 없습니다')
   } finally {
     loading.value = false
   }
@@ -77,25 +76,14 @@ const handleSave = async () => {
       assetOrder: assetItems.value
     })
 
-    Toast.success('설정이 저장되었습니다')
+    toast.success('설정이 저장되었습니다')
     router.back()
   } catch (error) {
     console.error('Failed to save settings:', error)
     errorMessage.value = error.response?.data?.message || '설정 저장에 실패했습니다'
-    Toast.fail(errorMessage.value)
+    toast.error(errorMessage.value)
   } finally {
     loading.value = false
-  }
-}
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-    Toast.success('로그아웃되었습니다')
-    router.push('/login')
-  } catch (error) {
-    console.error('Logout failed:', error)
-    Toast.fail('로그아웃에 실패했습니다')
   }
 }
 
@@ -109,13 +97,13 @@ const handleWithdraw = async () => {
     await userApi.deleteAccount()
 
     // 로컬 저장소 클리어
-    authStore.clearAuthData()
+    localStorage.clear()
 
-    Toast.success('회원 탈퇴가 완료되었습니다')
+    toast.success('회원 탈퇴가 완료되었습니다')
     router.push('/welcome')
   } catch (error) {
     console.error('Account deletion failed:', error)
-    Toast.fail(error.response?.data?.message || '회원 탈퇴에 실패했습니다')
+    toast.error(error.response?.data?.message || '회원 탈퇴에 실패했습니다')
   } finally {
     loading.value = false
   }
@@ -268,16 +256,6 @@ onMounted(() => {
       <!-- Save Button -->
       <button class="btn btn-save" @click="handleSave">
         저장
-      </button>
-
-      <!-- Logout Button -->
-      <button class="logout-btn" @click="handleLogout">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        로그아웃
       </button>
 
       <!-- Withdraw -->
@@ -599,34 +577,6 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
-}
-
-.logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  width: 100%;
-  padding: var(--spacing-md);
-  background: rgba(100, 116, 139, 0.1);
-  border: 1px solid rgba(100, 116, 139, 0.3);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: #94A3B8;
-  cursor: pointer;
-  margin-top: var(--spacing-lg);
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  background: rgba(100, 116, 139, 0.15);
-  border-color: #64748B;
-  color: #CBD5E1;
-}
-
-.logout-btn:active {
-  transform: scale(0.98);
 }
 
 .withdraw-btn {
