@@ -2,6 +2,7 @@ import './assets/base.css'
 import './assets/main.css'
 
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
@@ -28,6 +29,7 @@ import {
   List,
   DatePicker,
   Picker,
+  Calendar,
   Locale,
   Swipe,
   SwipeItem
@@ -68,6 +70,10 @@ ChartJS.register(
 )
 
 const app = createApp(App)
+const pinia = createPinia()
+
+// Use Pinia
+app.use(pinia)
 
 // Use Vant components
 app.use(Button)
@@ -91,6 +97,7 @@ app.use(PullRefresh)
 app.use(List)
 app.use(DatePicker)
 app.use(Picker)
+app.use(Calendar)
 app.use(Swipe)
 app.use(SwipeItem)
 

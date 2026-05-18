@@ -1,0 +1,166 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.1.1-create-stock-filter-score-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: stock_filter_score
+            columns:
+              - column: {name: id, type: BIGSERIAL, constraints: {primaryKey: true}}
+              - column: {name: stock_code, type: "VARCHAR(10)", constraints: {nullable: false}}
+              - column: {name: stock_name, type: "VARCHAR(50)", constraints: {nullable: false}}
+              - column: {name: score_date, type: DATE, constraints: {nullable: false}}
+              - column: {name: foreign_net_buy, type: BIGINT, constraints: {nullable: false}}
+              - column: {name: institutional_net_buy, type: BIGINT, constraints: {nullable: false}}
+              - column: {name: vol_avg_multiple, type: "NUMERIC(10,2)", constraints: {nullable: false}}
+              - column: {name: price_volatility, type: "NUMERIC(10,4)", constraints: {nullable: false}}
+              - column: {name: scaler_score, type: "NUMERIC(10,4)", constraints: {nullable: false}}
+              - column: {name: is_selected, type: BOOLEAN, defaultValueBoolean: false, constraints: {nullable: false}}
+              - column: {name: created_at, type: TIMESTAMP, defaultValueComputed: CURRENT_TIMESTAMP, constraints: {nullable: false}}
+        - addUniqueConstraint:
+            tableName: stock_filter_score
+            columnNames: stock_code, score_date
+        - createIndex:
+            indexName: idx_stock_filter_score_date
+            tableName: stock_filter_score
+            columns: [{column: {name: score_date}}]
+        - createIndex:
+            indexName: idx_stock_filter_score_selected
+            tableName: stock_filter_score
+            columns: [{column: {name: score_date}}, {column: {name: is_selected}}]
+        - setTableRemarks: {tableName: stock_filter_score, remarks: '코스피 100 종목 스코어링 결과 (매일 갱신)'}
+
+  - changeSet:
+      id: 1.1.2-create-stock-financial-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: stock_financial
+            columns:
+              - column: {name: id, type: BIGSERIAL, constraints: {primaryKey: true}}
+              - column: {name: stock_code, type: "VARCHAR(10)", constraints: {nullable: false}}
+              - column: {name: stock_name, type: "VARCHAR(50)", constraints: {nullable: false}}
+              - column: {name: base_date, type: DATE, constraints: {nullable: false}}
+              - column: {name: per, type: "NUMERIC(10,2)"}
+              - column: {name: roe, type: "NUMERIC(10,2)"}
+              - column: {name: operating_margin, type: "NUMERIC(10,2)"}
+              - column: {name: created_at, type: TIMESTAMP, defaultValueComputed: CURRENT_TIMESTAMP, constraints: {nullable: false}}
+        - addUniqueConstraint:
+            tableName: stock_financial
+            columnNames: stock_code, base_date
+        - createIndex:
+            indexName: idx_stock_financial_code
+            tableName: stock_financial
+            columns: [{column: {name: stock_code}}]
+        - createIndex:
+            indexName: idx_stock_financial_date
+            tableName: stock_financial
+            columns: [{column: {name: base_date}}]
+        - setTableRemarks: {tableName: stock_financial, remarks: 'DART API 재무지표 (분기별 수집)'}
+
+  - changeSet:
+      id: 1.1.3-create-news-analysis-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: news_analysis
+            columns:
+              - column: {name: id, type: BIGSERIAL, constraints: {primaryKey: true}}
+              - column: {name: stock_code, type: "VARCHAR(10)"}
+              - column: {name: analysis_date, type: DATE, constraints: {nullable: false}}
+              - column: {name: sentiment_score, type: "NUMERIC(5,3)", constraints: {nullable: false}}
+              - column: {name: news_count, type: INT, defaultValueNumeric: 0, constraints: {nullable: false}}
+              - column: {name: created_at, type: TIMESTAMP, defaultValueComputed: CURRENT_TIMESTAMP, constraints: {nullable: false}}
+        - addUniqueConstraint:
+            tableName: news_analysis
+            columnNames: stock_code, analysis_date
+        - createIndex:
+            indexName: idx_news_analysis_date
+            tableName: news_analysis
+            columns: [{column: {name: analysis_date}}]
+        - createIndex:
+            indexName: idx_news_analysis_stock
+            tableName: news_analysis
+            columns: [{column: {name: stock_code}}, {column: {name: analysis_date}}]
+        - setTableRemarks: {tableName: news_analysis, remarks: 'KR-FinBERT 감성 분석 결과'}
+
+  - changeSet:
+      id: 1.1.4-create-prophet-forecast-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: prophet_forecast
+            columns:
+              - column: {name: id, type: BIGSERIAL, constraints: {primaryKey: true}}
+              - column: {name: stock_code, type: "VARCHAR(10)", constraints: {nullable: false}}
+              - column: {name: stock_name, type: "VARCHAR(50)", constraints: {nullable: false}}
+              - column: {name: forecast_date, type: DATE, constraints: {nullable: false}}
+              - column: {name: yhat_d1, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_d2, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_d3, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_d4, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_d5, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_upper_d1, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_upper_d2, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_upper_d3, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_upper_d4, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_upper_d5, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_lower_d1, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_lower_d2, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_lower_d3, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_lower_d4, type: "NUMERIC(12,2)"}
+              - column: {name: yhat_lower_d5, type: "NUMERIC(12,2)"}
+              - column: {name: price_trend, type: "NUMERIC(10,6)"}
+              - column: {name: volume_trend, type: "NUMERIC(10,6)"}
+              - column: {name: price_uncertainty, type: "NUMERIC(10,4)"}
+              - column: {name: created_at, type: TIMESTAMP, defaultValueComputed: CURRENT_TIMESTAMP, constraints: {nullable: false}}
+        - addUniqueConstraint:
+            tableName: prophet_forecast
+            columnNames: stock_code, forecast_date
+        - createIndex:
+            indexName: idx_prophet_forecast_code
+            tableName: prophet_forecast
+            columns: [{column: {name: stock_code}}]
+        - createIndex:
+            indexName: idx_prophet_forecast_date
+            tableName: prophet_forecast
+            columns: [{column: {name: forecast_date}}]
+        - setTableRemarks: {tableName: prophet_forecast, remarks: 'Prophet D+1~D+5 시계열 예측 결과'}
+
+  - changeSet:
+      id: 1.1.5-create-ai-trade-decision-table
+      author: claude
+      context: mvp
+      changes:
+        - createTable:
+            tableName: ai_trade_decision
+            columns:
+              - column: {name: id, type: BIGSERIAL, constraints: {primaryKey: true}}
+              - column: {name: stock_code, type: "VARCHAR(10)", constraints: {nullable: false}}
+              - column: {name: stock_name, type: "VARCHAR(50)", constraints: {nullable: false}}
+              - column: {name: decision_date, type: DATE, constraints: {nullable: false}}
+              - column: {name: decision, type: "VARCHAR(10)", constraints: {nullable: false}}
+              - column: {name: rank, type: INT}
+              - column: {name: reason, type: TEXT}
+              - column: {name: prompt_summary, type: TEXT}
+              - column: {name: created_at, type: TIMESTAMP, defaultValueComputed: CURRENT_TIMESTAMP, constraints: {nullable: false}}
+        - addUniqueConstraint:
+            tableName: ai_trade_decision
+            columnNames: stock_code, decision_date, decision
+        - createIndex:
+            indexName: idx_ai_trade_decision_date
+            tableName: ai_trade_decision
+            columns: [{column: {name: decision_date}}]
+        - createIndex:
+            indexName: idx_ai_trade_decision_code
+            tableName: ai_trade_decision
+            columns: [{column: {name: stock_code}}, {column: {name: decision_date}}]
+        - createIndex:
+            indexName: idx_ai_trade_decision_rank
+            tableName: ai_trade_decision
+            columns: [{column: {name: decision_date}}, {column: {name: decision}}, {column: {name: rank}}]
+        - setTableRemarks: {tableName: ai_trade_decision, remarks: 'Gemini AI 매매 판단 결과'}

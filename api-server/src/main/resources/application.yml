@@ -1,0 +1,139 @@
+spring:
+  application:
+    name: api-server
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/financemanage
+    username: admin
+    password: admin1234
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # DB 연결 재시도 설정 (Compound 동시 실행 지원)
+      initialization-fail-timeout: 60000  # 60초 동안 재시도
+      connection-test-query: SELECT 1
+      keepalive-time: 30000  # 30초마다 연결 유지 확인
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        highlight_sql: true
+    open-in-view: false
+
+  # Liquibase Configuration
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+    drop-first: false  # NEVER drop in production!
+    contexts: mvp      # Start with MVP context
+
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+
+# Server Configuration
+server:
+  port: 7070
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:financemanage-secret-key-for-jwt-token-generation-minimum-32-characters-production-ready}
+  access-token-expiration: 3600000    # 1 hour (ms)
+  refresh-token-expiration: 86400000  # 24 hours (ms)
+
+# Jasypt Configuration (Updated to secure algorithm)
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD:default-encryption-key-change-in-production-minimum-32-characters}
+    algorithm: PBEWITHHMACSHA512ANDAES_256
+    key-obtention-iterations: 1000
+    pool-size: 1
+    provider-name: SunJCE
+    salt-generator-classname: org.jasypt.salt.RandomSaltGenerator
+    iv-generator-classname: org.jasypt.iv.RandomIvGenerator
+    string-output-type: base64
+
+# KIS API Configuration
+kis:
+  # 모의투자 전용 도메인 (실전투자: https://openapi.koreainvestment.com:9443)
+  base-url: https://openapivts.koreainvestment.com:29443
+
+  # 모의투자 vs 실전투자 모드 설정
+  # - VIRTUAL: 모의투자 (가상 자금, TR_ID: VTTC*)
+  # - REAL: 실전투자 (실제 자금, TR_ID: TTTC*)
+  # ⚠️ 주의: 모의투자와 실전투자는 별도의 APP Key/Secret이 필요합니다!
+  #   - 모의투자: KIS Developers 포털 > 모의투자 APP 등록
+  #   - 실전투자: KIS Developers 포털 > 실전투자 APP 등록
+  mode: ${KIS_MODE:VIRTUAL}
+
+  # APP Key/Secret (환경 변수로 주입 권장)
+  # ⚠️ 절대 실제 값을 코드에 커밋하지 마세요!
+  app-key: ${KIS_APP_KEY:your-kis-app-key}
+  app-secret: ${KIS_APP_SECRET:your-kis-app-secret}
+
+  # Access Token 캐시 TTL (24시간)
+  # KIS API Access Token은 24시간 유효하므로 23시간으로 설정 (1시간 여유)
+  token-cache-ttl: 86400000  # 24 hours (ms)
+
+# CORS Configuration
+cors:
+  allowed-origins:
+    - http://localhost:5173  # Vue3 dev server (default)
+    - http://localhost:5174  # Vue3 dev server (alternative port)
+    - http://localhost:3000  # Nginx production
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - PATCH
+    - OPTIONS
+  allowed-headers:
+    - "*"
+  allow-credentials: true
+  max-age: 3600
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.inbeom.apiserver: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator Configuration (Health Check)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

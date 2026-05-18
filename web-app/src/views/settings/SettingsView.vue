@@ -1,12 +1,16 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
 import { mockSettings } from '@/services/mockData'
+import { userApi } from '@/services/api'
+import toast from '@/utils/toast'
 
 const router = useRouter()
 
 const settings = ref(mockSettings)
+const loading = ref(false)
+const errorMessage = ref('')
 
 const assetItems = ref([
   { key: 'stocks_overseas', label: '주식 (해외)', icon: '📈' },
@@ -37,18 +41,77 @@ const handleDragEnd = () => {
   dragOverIndex.value = null
 }
 
-const handleSave = () => {
-  console.log('Save settings:', settings.value)
-  console.log('Asset order:', assetItems.value)
-  router.back()
-}
-
-const handleWithdraw = () => {
-  if (confirm('정말 회원 탈퇴하시겠습니까?')) {
-    localStorage.removeItem('accessToken')
-    router.push('/welcome')
+const loadSettings = async () => {
+  try {
+    loading.value = true
+    const response = await userApi.getSettings()
+    if (response.data) {
+      const settingsData = response.data
+      settings.value.darkMode = settingsData.darkMode
+      settings.value.autoLogin = settingsData.autoLogin
+      settings.value.notifications = settingsData.notifications
+      if (settingsData.assetOrder && Array.isArray(settingsData.assetOrder)) {
+        assetItems.value = settingsData.assetOrder
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+    errorMessage.value = '설정을 불러오는데 실패했습니다'
+    toast.error('설정을 불러올 수 없습니다')
+  } finally {
+    loading.value = false
   }
 }
+
+const handleSave = async () => {
+  try {
+    loading.value = true
+    errorMessage.value = ''
+
+    // Save settings to API
+    await userApi.updateSettings({
+      darkMode: settings.value.darkMode,
+      autoLogin: settings.value.autoLogin,
+      notifications: settings.value.notifications,
+      assetOrder: assetItems.value
+    })
+
+    toast.success('설정이 저장되었습니다')
+    router.back()
+  } catch (error) {
+    console.error('Failed to save settings:', error)
+    errorMessage.value = error.response?.data?.message || '설정 저장에 실패했습니다'
+    toast.error(errorMessage.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleWithdraw = async () => {
+  if (!confirm('정말 회원 탈퇴하시겠습니까?\n\n모든 데이터가 삭제되며 복구할 수 없습니다.')) {
+    return
+  }
+
+  try {
+    loading.value = true
+    await userApi.deleteAccount()
+
+    // 로컬 저장소 클리어
+    localStorage.clear()
+
+    toast.success('회원 탈퇴가 완료되었습니다')
+    router.push('/welcome')
+  } catch (error) {
+    console.error('Account deletion failed:', error)
+    toast.error(error.response?.data?.message || '회원 탈퇴에 실패했습니다')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadSettings()
+})
 </script>
 
 <template>
@@ -345,6 +408,12 @@ const handleWithdraw = () => {
   padding: var(--spacing-xs) 0;
 }
 
+.setting-row.vertical {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+}
+
 .setting-label {
   display: flex;
   align-items: center;
@@ -379,6 +448,29 @@ const handleWithdraw = () => {
 .setting-desc {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
+}
+
+.setting-input,
+.setting-select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+}
+
+.setting-input:focus,
+.setting-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.setting-select {
+  cursor: pointer;
 }
 
 .setting-divider {
